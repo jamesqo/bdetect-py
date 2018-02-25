@@ -1,3 +1,4 @@
+import logging as log
 import pandas as pd
 import simplejson as json
 
@@ -6,12 +7,24 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 from TreeKernelSVC import TreeKernelSVC
+from util import log_mcall
 
 TWEETS_ROOT = 'data/bullyingV3'
 TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
 LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-d', '--debug',
+        help="Print debug information",
+        action='store_const', dest='log_level', const=log.DEBUG,
+        default=log.WARNING
+    )
+    return parser.parse_args()
+
 def load_tweets():
+    log_mcall()
     with open(TWEETS_FILENAME) as tweets_file:
         tweets = json.load(tweets_file)
     
@@ -28,12 +41,8 @@ def load_tweets():
     X.set_index('id', inplace=True)
     return X
 
-def f(vals):
-    labels, shape = algorithms.factorize(
-        vals, size_hint=min(len(self), _SIZE_HINT_LIMIT))
-    return labels.astype('i8', copy=False), len(shape)
-
 def load_tweet_labels(X):
+    log_mcall()
     y = pd.read_csv(LABELS_FILENAME,
                     names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
                     dtype={'id': object, 'user_id': object})
@@ -51,6 +60,9 @@ def load_tweet_labels(X):
     return y
 
 def main():
+    args = parse_args()
+    log.basicConfig(level=args.log_level)
+
     X = load_tweets()
     y = load_tweet_labels(X)
     assert X.shape[0] == y.shape[0]
