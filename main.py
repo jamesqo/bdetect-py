@@ -1,13 +1,18 @@
 import pandas as pd
 import simplejson as json
 
-from nltk.tree import Tree
 from pandas.io.json import json_normalize
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from spacy.lang.en import English
+
+from TreeKernelClassifier import TreeKernelClassifier
+
+TWEETS_ROOT = 'data/bullyingV3'
+CORENLP_ROOT = 'lib/stanford-corenlp-full-2018-01-31'
+CORENLP_VER = '3.9.0'
 
 def load_tweets():
-    with open('data/bullyingV3/tweet.json') as tweets_file:
+    with open(f'{TWEETS_ROOT}/tweet.json') as tweets_file:
         tweets = json.load(tweets_file)
     
     for tweet in tweets:
@@ -20,7 +25,8 @@ def load_tweets():
     return X
 
 def load_tweet_labels(X):
-    y = pd.read_csv('data/bullyingV3/data.csv', names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+    y = pd.read_csv(f'{TWEETS_ROOT}/data.csv',
+                    names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'])
     y['is_trace'] = y['is_trace'] == 'y'
 
     # Drop labels for entries that are missing in X
@@ -34,12 +40,10 @@ def load_tweet_labels(X):
     y = X_y.drop(columns=dropcols)
     return y
 
-def tok_format(tok):
-    #print(tok.orth_)
-    return "_".join([tok.orth_, tok.tag_])
-
-def to_nltk_tree(node):
-    return Tree(tok_format(node), [to_nltk_tree(child) for child in node.children])
+def get_jar_paths():
+    jar_path = f'{CORENLP_ROOT}/stanford-corenlp-{CORENLP_VER}.jar'
+    models_jar_path = f'{CORENLP_ROOT}/stanford-corenlp-{CORENLP_VER}-models.jar'
+    return jar_path, models_jar_path
 
 def main():
     X = load_tweets()
@@ -47,12 +51,12 @@ def main():
     assert X.shape[0] == y.shape[0]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    nlp = English()
-    nlp.add_pipe(nlp.create_pipe('sentencizer'))
-    doc = nlp("The quick brown fox jumps over the lazy dog.")
-    for sent in doc.sents:
-        print(list(sent.root.children))
-        to_nltk_tree(sent.root).pretty_print()
+    tree_clf = TreeKernelClassifier(*get_jar_paths(), kernel='ptk')
+    tree_clf.fit(X_train, y_train)
+    y_predict = tree_clf.predict(X_test)
+
+    score = accuracy_score(y_true=y_test, y_pred=y_predict)
+    print(f"Tree kernel score: {score}")
 
 if __name__ == '__main__':
     main()
