@@ -22,6 +22,8 @@ def load_tweets():
             del tweet['user']
 
     X = json_normalize(tweets)
+    X.drop('id', axis=1, inplace=True)
+    X.rename(columns={'id_str': 'id'}, inplace=True)
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
     return X
@@ -33,7 +35,8 @@ def f(vals):
 
 def load_tweet_labels(X):
     y = pd.read_csv(LABELS_FILENAME,
-                    names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+                    names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
+                    dtype={'id': object, 'user_id': object})
     y.drop_duplicates('id', inplace=True)
     y.set_index('id', inplace=True)
     y['is_trace'] = y['is_trace'] == 'y'
