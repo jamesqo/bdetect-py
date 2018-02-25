@@ -56,8 +56,11 @@ api = tweepy.API(auth_handler=auth, parser=JSONParser())
 
 indf = pd.read_csv('data.csv', names=['tweetid', 'userid', 'class', 'type', 'form', 'teasing', 'author_role', 'emotion'])
 with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
+	outFile.write('[')
 	l = list(indf['tweetid'])
 	for ln in chunkIt(l, 100):
 		rst = api.statuses_lookup(id_=ln);
 		for tweet in rst:
-			outFile.write(json.dumps(tweet) + "\n");
+			outFile.write(json.dumps(tweet))
+			outFile.write(",\n")
+	outFile.write(']')
