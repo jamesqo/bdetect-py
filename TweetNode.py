@@ -1,11 +1,10 @@
 class TweetNode(object):
-    def __init__(self):
-        pass
-
-    def __init__(self, token):
+    def __init__(self, token=None):
+        self._children = None
         self._token = token
-        for child in token.children:
-            self.add_child(child)
+        if token is not None:
+            for child in token.children:
+                self.add_child(child)
 
     @property
     def children(self):

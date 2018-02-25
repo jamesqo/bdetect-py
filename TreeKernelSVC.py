@@ -1,13 +1,23 @@
+import numpy as np
+
 from sklearn.svm import SVC
 
 from TweetParser import TweetParser
 from util import log_mcall
 
+from kernels.PTKernel import PTKernel
+
 class TreeKernelSVC(object):
     def __init__(self, kernel, *args, **kwargs):
-        self.kernel = kernel
+        self.kernel = self._get_kernel_function(name=kernel)
         self._parser = TweetParser()
         self._svc = SVC(kernel='precomputed', *args, **kwargs)
+
+    def _get_kernel_function(self, name):
+        if name == 'ptk':
+            return PTKernel()
+
+        raise ValueError(f"Unrecognized kernel '{name}'")
 
     def _parse_trees(self, X):
         log_mcall()

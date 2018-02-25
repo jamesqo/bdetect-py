@@ -1,7 +1,9 @@
 import logging as log
 import pandas as pd
 import simplejson as json
+import sys
 
+from argparse import ArgumentParser
 from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -14,7 +16,7 @@ TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
 LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument(
         '-d', '--debug',
         help="Print debug information",
@@ -77,4 +79,8 @@ def main():
         print(f"{kernel} score: {score}")
 
 if __name__ == '__main__':
+    start = datetime.now()
     main()
+    end = datetime.now()
+    seconds = (end - start).seconds
+    print(f"Finished running in {seconds}s", file=sys.stderr)
