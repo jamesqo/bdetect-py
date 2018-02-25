@@ -5,7 +5,7 @@ from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from TreeKernelClassifier import TreeKernelClassifier
+from TreeKernelSVC import TreeKernelSVC
 
 TWEETS_ROOT = 'data/bullyingV3'
 TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
@@ -57,7 +57,7 @@ def main():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     for kernel in 'ptk', 'sptk', 'csptk':
-        tree_clf = TreeKernelClassifier(kernel=kernel)
+        tree_clf = TreeKernelSVC(kernel=kernel)
         tree_clf.fit(X_train, y_train)
         y_predict = tree_clf.predict(X_test)
 
