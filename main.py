@@ -8,11 +8,11 @@ from sklearn.model_selection import train_test_split
 from TreeKernelClassifier import TreeKernelClassifier
 
 TWEETS_ROOT = 'data/bullyingV3'
-CORENLP_ROOT = 'lib/stanford-corenlp-full-2018-01-31'
-CORENLP_VER = '3.9.0'
+TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
+LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
 
 def load_tweets():
-    with open(f'{TWEETS_ROOT}/tweet.json') as tweets_file:
+    with open(TWEETS_FILENAME) as tweets_file:
         tweets = json.load(tweets_file)
     
     for tweet in tweets:
@@ -22,11 +22,20 @@ def load_tweets():
             del tweet['user']
 
     X = json_normalize(tweets)
+    X.drop_duplicates('id', inplace=True)
+    X.set_index('id', inplace=True)
     return X
 
+def f(vals):
+    labels, shape = algorithms.factorize(
+        vals, size_hint=min(len(self), _SIZE_HINT_LIMIT))
+    return labels.astype('i8', copy=False), len(shape)
+
 def load_tweet_labels(X):
-    y = pd.read_csv(f'{TWEETS_ROOT}/data.csv',
+    y = pd.read_csv(LABELS_FILENAME,
                     names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+    y.drop_duplicates('id', inplace=True)
+    y.set_index('id', inplace=True)
     y['is_trace'] = y['is_trace'] == 'y'
 
     # Drop labels for entries that are missing in X
@@ -35,15 +44,8 @@ def load_tweet_labels(X):
     X_y = pd.concat([X, y], axis=1)
     X_y.drop(X_y.index[X_y['tweet_absent'].isna()], axis=0, inplace=True)
 
-    dropcols = list(X.columns.values)
-    dropcols.remove('id')
-    y = X_y.drop(columns=dropcols)
+    y = X_y.drop(columns=X.columns.values)
     return y
-
-def get_jar_paths():
-    jar_path = f'{CORENLP_ROOT}/stanford-corenlp-{CORENLP_VER}.jar'
-    models_jar_path = f'{CORENLP_ROOT}/stanford-corenlp-{CORENLP_VER}-models.jar'
-    return jar_path, models_jar_path
 
 def main():
     X = load_tweets()
@@ -51,12 +53,13 @@ def main():
     assert X.shape[0] == y.shape[0]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    tree_clf = TreeKernelClassifier(*get_jar_paths(), kernel='ptk')
-    tree_clf.fit(X_train, y_train)
-    y_predict = tree_clf.predict(X_test)
+    for kernel in 'ptk', 'sptk', 'csptk':
+        tree_clf = TreeKernelClassifier(kernel=kernel)
+        tree_clf.fit(X_train, y_train)
+        y_predict = tree_clf.predict(X_test)
 
-    score = accuracy_score(y_true=y_test, y_pred=y_predict)
-    print(f"Tree kernel score: {score}")
+        score = accuracy_score(y_true=y_test, y_pred=y_predict)
+        print(f"{kernel} score: {score}")
 
 if __name__ == '__main__':
     main()
