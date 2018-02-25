@@ -37,6 +37,7 @@ import sys
 import json
 import codecs
 import pandas as pd
+import os
 from tweepy.parsers import JSONParser
 
 ####### Access Information #################
@@ -58,9 +59,11 @@ indf = pd.read_csv('data.csv', names=['tweetid', 'userid', 'class', 'type', 'for
 with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
 	outFile.write('[')
 	l = list(indf['tweetid'])
-	for ln in chunkIt(l, 100):
+	for ln in chunkIt(l, 75):
 		rst = api.statuses_lookup(id_=ln);
 		for tweet in rst:
 			outFile.write(json.dumps(tweet))
 			outFile.write(",\n")
+	outFile.seek(-1, os.SEEK_CUR)
+	outFile.truncate()
 	outFile.write(']')
