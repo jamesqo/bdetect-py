@@ -1,10 +1,10 @@
 import pandas as pd
 import simplejson as json
-import spacy
 
+from nltk.tree import Tree
 from pandas.io.json import json_normalize
 from sklearn.model_selection import train_test_split
-#from stat_parser import Parser
+from spacy.lang.en import English
 
 def load_tweets():
     with open('data/bullyingV3/tweet.json') as tweets_file:
@@ -34,15 +34,25 @@ def load_tweet_labels(X):
     y = X_y.drop(columns=dropcols)
     return y
 
+def tok_format(tok):
+    #print(tok.orth_)
+    return "_".join([tok.orth_, tok.tag_])
+
+def to_nltk_tree(node):
+    return Tree(tok_format(node), [to_nltk_tree(child) for child in node.children])
+
 def main():
     X = load_tweets()
     y = load_tweet_labels(X)
     assert X.shape[0] == y.shape[0]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    nlp = spacy.load('en')
-    doc = nlp("Hello, world!")
-    print(doc)
+    nlp = English()
+    nlp.add_pipe(nlp.create_pipe('sentencizer'))
+    doc = nlp("The quick brown fox jumps over the lazy dog.")
+    for sent in doc.sents:
+        print(list(sent.root.children))
+        to_nltk_tree(sent.root).pretty_print()
 
 if __name__ == '__main__':
     main()
