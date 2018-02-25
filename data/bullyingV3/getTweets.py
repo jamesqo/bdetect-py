@@ -64,6 +64,6 @@ with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
 		for tweet in rst:
 			outFile.write(json.dumps(tweet))
 			outFile.write(",\n")
-	outFile.seek(-1, os.SEEK_CUR)
+	outFile.seek(-2, os.SEEK_CUR)
 	outFile.truncate()
 	outFile.write(']')
