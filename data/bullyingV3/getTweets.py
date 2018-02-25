@@ -20,20 +20,31 @@ consumer_key = 'LOVNhsAfB1zfPYnABCDE'
 
 """
 
+def chunkIt(seq, num):
+    avg = len(seq) / float(num)
+    out = []
+    last = 0.0
+
+    while last < len(seq):
+        out.append(seq[int(last):int(last + avg)])
+        last += avg
+
+    return out
+
 # call user.lookup api to query a list of user ids.
 import tweepy
 import sys
 import json
 import codecs
+import pandas as pd
 from tweepy.parsers import JSONParser
 
 ####### Access Information #################
 
 # Parameter you need to specify
-consumer_key = ''
-consumer_secret = ''
-access_key = ''
-access_secret = ''
+with open('twitter_creds.txt') as file:
+	lines = file.read().strip().splitlines()
+consumer_key, consumer_secret, access_key, access_secret = lines
 
 inputFile = 'tweet_id'
 outputFile = 'tweet.json'
@@ -43,17 +54,10 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_key, access_secret)
 api = tweepy.API(auth_handler=auth, parser=JSONParser())
 
-l=[];
-with open(inputFile, 'r') as inFile:
-	with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
-		for line in inFile.readlines():
-			l.append(line.rstrip());
-			if (len(l)>=99):
-				rst = api.statuses_lookup(id_=l);
-				for tweet in rst:
-					outFile.write(json.dumps(tweet) + "\n");
-				l=[];
-		if (len(l) > 0):
-			rst = api.statuses_lookup(id_=l);
-			for tweet in rst:
-				outFile.write(json.dumps(tweet) + "\n");
+indf = pd.read_csv('data.csv', names=['tweetid', 'userid', 'class', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
+	l = list(indf['tweetid'])
+	for ln in chunkIt(l, 100):
+		rst = api.statuses_lookup(id_=ln);
+		for tweet in rst:
+			outFile.write(json.dumps(tweet) + "\n");
