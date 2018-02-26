@@ -2,13 +2,14 @@ import numpy as np
 
 from sklearn.svm import SVC
 
-from .kernels import PTKernel
-from .tree import TweetParser
-from .util import log_mcall
+from kernels import PTKernel
+from tree import TweetParser
+from util import log_mcall
 
 class TreeKernelSVC(object):
     def __init__(self, kernel, *args, **kwargs):
-        self.kernel = self._get_kernel_function(name=kernel)
+        self.kernel = kernel
+        self._kernel_function = self._get_kernel_function(name=kernel)
         self._parser = TweetParser()
         self._svc = SVC(kernel='precomputed', *args, **kwargs)
 

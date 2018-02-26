@@ -1,8 +1,12 @@
 import spacy
 
+from emoji import Emoji
+
 class TweetParser(object):
     def __init__(self):
-        self._nlp = spacy.load('en')
+        nlp = spacy.load('en')
+        nlp.add_pipe(Emoji(nlp), first=True)
+        self._nlp = nlp
 
     def tree(self, text):
         return TweetTree(self._nlp(text))

@@ -4,12 +4,13 @@ import simplejson as json
 import sys
 
 from argparse import ArgumentParser
+from datetime import datetime
 from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from .svm import TreeKernelSVC
-from .util import log_mcall
+from svm import TreeKernelSVC
+from util import log_mcall
 
 TWEETS_ROOT = 'data/bullyingV3'
 TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
