@@ -7,10 +7,10 @@ from tree import TweetParser
 from util import log_mcall
 
 class TreeKernelSVC(object):
-    def __init__(self, kernel, *args, **kwargs):
+    def __init__(self, kernel, nlp_model='en', *args, **kwargs):
         self.kernel = kernel
         self._kernel_function = self._get_kernel_function(name=kernel)
-        self._parser = TweetParser()
+        self._parser = TweetParser(model=nlp_model)
         self._svc = SVC(kernel='precomputed', *args, **kwargs)
 
     def _get_kernel_function(self, name):
