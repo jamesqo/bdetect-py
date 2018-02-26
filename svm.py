@@ -2,10 +2,9 @@ import numpy as np
 
 from sklearn.svm import SVC
 
-from TweetParser import TweetParser
-from util import log_mcall
-
-from kernels.PTKernel import PTKernel
+from .kernels import PTKernel
+from .tree import TweetParser
+from .util import log_mcall
 
 class TreeKernelSVC(object):
     def __init__(self, kernel, *args, **kwargs):
