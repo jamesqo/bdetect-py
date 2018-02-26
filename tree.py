@@ -1,10 +1,11 @@
 import spacy
 
+from util import log_mcall
+
 class TweetParser(object):
-    def __init__(self):
-        nlp = spacy.load('en')
-        # TODO: Get spaCy to recognize emojis.
-        self._nlp = nlp
+    def __init__(self, model='en'):
+        log_mcall()
+        self._nlp = spacy.load(model)
 
     def tree(self, text):
         return TweetTree(self._nlp(text))

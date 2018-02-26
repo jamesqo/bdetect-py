@@ -32,7 +32,7 @@ class TreeKernelSVC(object):
 
         for i in range(m):
             for j in range(m_train):
-                matrix[i, j] = self.kernel(trees[i], self.trees_[j])
+                matrix[i, j] = self._kernel_function(trees[i], self.trees_[j])
 
         return matrix
 
