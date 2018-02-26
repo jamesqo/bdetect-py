@@ -2,5 +2,5 @@ class PTKernel(object):
     def __init__(self):
         pass
 
-    def __call__(self, tree1, tree2):
+    def __call__(self, x, y):
         pass

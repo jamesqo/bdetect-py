@@ -1,6 +1,7 @@
 import numpy as np
 import spacy
 
+from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.svm import SVC
 
 from kernels import PTKernel
@@ -25,18 +26,9 @@ class TreeKernelSVC(object):
 
     def _compute_kernel_matrix(self, docs):
         log_mcall()
-
-        m = len(docs)
-        m_train = len(self.docs_)
-        matrix = np.zeros((m, m_train))
-
-        for i in range(m):
-            doc = docs[i]
-            for j in range(m_train):
-                doc_train = self.docs_[k]
-                matrix[i, j] = self._kernel_function(doc, doc_train)
-
-        return matrix
+        return pairwise_kernels(X=docs,
+                                Y=self.docs_,
+                                metric=self._kernel_function)
 
     def fit(self, X, y):
         self.X_ = X
