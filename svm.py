@@ -31,8 +31,10 @@ class TreeKernelSVC(object):
         matrix = np.zeros((m, m_train))
 
         for i in range(m):
+            doc = docs[i]
             for j in range(m_train):
-                matrix[i, j] = self._kernel_function(docs[i], self.docs_[j])
+                doc_train = self.docs_[k]
+                matrix[i, j] = self._kernel_function(doc, doc_train)
 
         return matrix
 
