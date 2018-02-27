@@ -25,9 +25,15 @@ def parse_args():
         action='store_const', dest='log_level', const=log.DEBUG,
         default=log.WARNING
     )
+    parser.add_argument(
+        '-m', '--max-tweets',
+        help="Maximum number of tweets to read in",
+        dest='max_tweets', type=int,
+        default=-1
+    )
     return parser.parse_args()
 
-def load_tweets():
+def load_tweets(max_tweets=-1):
     log_mcall()
     with open(TWEETS_FILENAME) as tweets_file:
         tweets = json.load(tweets_file)
@@ -37,12 +43,16 @@ def load_tweets():
             del tweet['entities']
         if 'user' in tweet:
             del tweet['user']
-
     X = json_normalize(tweets)
+
     X.drop('id', axis=1, inplace=True)
     X.rename(columns={'id_str': 'id'}, inplace=True)
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
+
+    if max_tweets != -1:
+        X = X.head(n=max_tweets)
+
     return X[['text']]
 
 def load_tweet_labels(X):
@@ -82,7 +92,7 @@ def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
 
-    X = load_tweets()
+    X = load_tweets(max_tweets=args.max_tweets)
     Y = load_tweet_labels(X)
     assert X.shape[0] == Y.shape[0]
 
