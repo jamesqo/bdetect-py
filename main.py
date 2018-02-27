@@ -43,58 +43,64 @@ def load_tweets():
     X.rename(columns={'id_str': 'id'}, inplace=True)
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
-    return X
+    return X[['text']]
 
 def load_tweet_labels(X):
     log_mcall()
-    y = pd.read_csv(LABELS_FILENAME,
+    Y = pd.read_csv(LABELS_FILENAME,
                     names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
                     dtype={'id': object, 'user_id': object})
-    y.drop_duplicates('id', inplace=True)
-    y.set_index('id', inplace=True)
-    y['is_trace'] = y['is_trace'] == 'y'
+    Y.drop_duplicates('id', inplace=True)
+    Y.set_index('id', inplace=True)
+    Y['is_trace'] = Y['is_trace'] == 'y'
 
     # Drop labels for entries that are missing in X
-    # (X, y may not have the same number of rows as Twitter has removed some tweets)
+    # (X and Y may not have the same number of rows as Twitter has removed some tweets)
     X['tweet_absent'] = False
-    X_y = pd.concat([X, y], axis=1)
-    X_y.drop(X_y.index[X_y['tweet_absent'].isna()], axis=0, inplace=True)
+    X_Y = pd.concat([X, Y], axis=1)
+    X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
 
-    y = X_y.drop(columns=X.columns.values)
-    return y
+    Y = X_Y.drop(columns=X.columns.values)
+    return Y[['is_trace']]
 
 def parse_docs(X, model='en'):
     # TODO: Parallelize
     log_mcall()
-
     nlp = spacy.load(model)
     texts = sorted(X['text'])
     docs = [nlp(text) for text in texts]
+    return docs
 
+def add_doc_index(X):
+    log_mcall()
+    texts = sorted(X['text'])
     index_map = {text: index for index, text in enumerate(texts)}
     X['doc_index'] = X['text'].apply(lambda text: index_map[text])
-    X.drop('text', axis=1, inplace=True)
-
-    return docs
+    return X
 
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
 
     X = load_tweets()
-    y = load_tweet_labels(X)
-    assert X.shape[0] == y.shape[0]
+    Y = load_tweet_labels(X)
+    assert X.shape[0] == Y.shape[0]
 
     docs = parse_docs(X)
+    X = add_doc_index(X)
+    X.drop('text', axis=1, inplace=True)
 
+    # NLP Task A: Bullying trace classification
+    y = Y['is_trace']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
     for kernel in 'ptk', 'sptk', 'csptk':
         svc = TweetSVC(docs=docs, tree_kernel=kernel)
         svc.fit(X_train, y_train)
         y_predict = svc.predict(X_test)
 
         score = accuracy_score(y_true=y_test, y_pred=y_predict)
-        print(f"{kernel} score: {score}")
+        print(f"Task A, {kernel} score: {score}")
 
 if __name__ == '__main__':
     start = datetime.now()

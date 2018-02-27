@@ -6,6 +6,7 @@ class TweetKernel(object):
     def __call__(self, x, y):
         x = self.docs[x]
         y = self.docs[y]
+        return 0
 
 class PTKernel(object):
     def __init__(self):
