@@ -13,8 +13,8 @@ class TweetKernel(object):
         self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
     def __call__(self, x, y):
-        x_doc = self.docs[x[DOC_INDEX]]
-        y_doc = self.docs[y[DOC_INDEX]]
+        x_doc = self.docs[int(x[DOC_INDEX])]
+        y_doc = self.docs[int(y[DOC_INDEX])]
         return self._tree_kernel_function(x_doc, y_doc)
 
 class PTKernel(object):
@@ -22,4 +22,4 @@ class PTKernel(object):
         pass
 
     def __call__(self, x, y):
-        pass
+        return 0
