@@ -1,6 +1,7 @@
 import logging as log
 import pandas as pd
 import simplejson as json
+import spacy
 import sys
 
 from argparse import ArgumentParser
@@ -9,7 +10,7 @@ from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from svm import TreeKernelSVC
+from svm import TweetSVC
 from util import log_mcall
 
 TWEETS_ROOT = 'data/bullyingV3'
@@ -62,6 +63,13 @@ def load_tweet_labels(X):
     y = X_y.drop(columns=X.columns.values)
     return y
 
+def parse_docs(X, model='en'):
+    # TODO: Parallelize
+    log_mcall()
+    nlp = spacy.load(model)
+    X['doc'] = X['text'].apply(nlp)
+    return X
+
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
@@ -70,11 +78,13 @@ def main():
     y = load_tweet_labels(X)
     assert X.shape[0] == y.shape[0]
 
+    X = parse_docs(X)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     for kernel in 'ptk', 'sptk', 'csptk':
-        tree_clf = TreeKernelSVC(kernel=kernel)
-        tree_clf.fit(X_train, y_train)
-        y_predict = tree_clf.predict(X_test)
+        svc = TweetSVC(tree_kernel=kernel)
+        svc.fit(X_train, y_train)
+        y_predict = svc.predict(X_test)
 
         score = accuracy_score(y_true=y_test, y_pred=y_predict)
         print(f"{kernel} score: {score}")
