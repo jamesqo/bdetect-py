@@ -1,9 +1,11 @@
 class TweetKernel(object):
-    def __init__(self, tree_kernel):
+    def __init__(self, docs, tree_kernel):
+        self.docs = docs
         self.tree_kernel = tree_kernel
 
     def __call__(self, x, y):
-        print(type(x), type(y))
+        x = self.docs[x]
+        y = self.docs[y]
 
 class PTKernel(object):
     def __init__(self):

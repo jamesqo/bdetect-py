@@ -66,9 +66,16 @@ def load_tweet_labels(X):
 def parse_docs(X, model='en'):
     # TODO: Parallelize
     log_mcall()
+
     nlp = spacy.load(model)
-    X['doc'] = X['text'].apply(nlp)
-    return X
+    texts = sorted(X['text'])
+    docs = [nlp(text) for text in texts]
+
+    index_map = {text: index for index, text in enumerate(texts)}
+    X['doc_index'] = X['text'].apply(lambda text: index_map[text])
+    X.drop('text', axis=1, inplace=True)
+
+    return docs
 
 def main():
     args = parse_args()
@@ -78,11 +85,11 @@ def main():
     y = load_tweet_labels(X)
     assert X.shape[0] == y.shape[0]
 
-    X = parse_docs(X)
+    docs = parse_docs(X)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     for kernel in 'ptk', 'sptk', 'csptk':
-        svc = TweetSVC(tree_kernel=kernel)
+        svc = TweetSVC(docs=docs, tree_kernel=kernel)
         svc.fit(X_train, y_train)
         y_predict = svc.predict(X_test)
 
