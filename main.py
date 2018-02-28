@@ -78,7 +78,8 @@ def parse_docs(X, model='en'):
     log_mcall()
     nlp = spacy.load(model)
     texts = sorted(X['text'])
-    docs = Pool().map(nlp, texts)
+    # TODO: Parallelize
+    docs = [nlp(text) for text in texts]
     return docs
 
 def add_doc_index(X):
