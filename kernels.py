@@ -13,9 +13,9 @@ class TweetKernel(object):
         self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
     def __call__(self, x, y):
-        x_doc = self.docs[int(x[DOC_INDEX])]
-        y_doc = self.docs[int(y[DOC_INDEX])]
-        return self._tree_kernel_function(x_doc, y_doc)
+        xindex, yindex = int(x[DOC_INDEX]), int(y[DOC_INDEX])
+        xdoc, ydoc = self.docs[xindex], self.docs[yindex]
+        return self._tree_kernel_function(xdoc, ydoc)
 
 class PTKernel(object):
     def __init__(self):
