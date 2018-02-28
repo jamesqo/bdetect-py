@@ -1,4 +1,5 @@
 import logging as log
+import multiprocessing_on_dill as mp
 import pandas as pd
 import simplejson as json
 import spacy
@@ -6,7 +7,6 @@ import sys
 
 from argparse import ArgumentParser
 from datetime import datetime
-from multiprocessing import Pool
 from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -78,8 +78,7 @@ def parse_docs(X, model='en'):
     log_mcall()
     nlp = spacy.load(model)
     texts = sorted(X['text'])
-    # TODO: Parallelize
-    docs = [nlp(text) for text in texts]
+    docs = mp.Pool().map(nlp, texts)
     return docs
 
 def add_doc_index(X):
