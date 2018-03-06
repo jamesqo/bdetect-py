@@ -12,13 +12,12 @@ class TweetKernel(object):
     def __init__(self, docs, tree_kernel):
         self.docs = docs
         self.tree_kernel = tree_kernel
-        self._tree_kernel_function = _get_tree_kernel_function(
-            name=tree_kernel)
+        self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
-    def __call__(self, x, y):
-        xindex, yindex = int(x[DOC_INDEX]), int(y[DOC_INDEX])
-        xdoc, ydoc = self.docs[xindex], self.docs[yindex]
-        return self._tree_kernel_function(xdoc, ydoc)
+    def __call__(self, a, b):
+        indexa, indexb = int(a[DOC_INDEX]), int(b[DOC_INDEX])
+        doca, docb = self.docs[indexa], self.docs[indexb]
+        return self._tree_kernel_function(doca, docb)
 
 def _matching_nodes(doca, docb):
     pass
