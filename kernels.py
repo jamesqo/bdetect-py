@@ -20,6 +20,8 @@ class TweetKernel(object):
         xdoc, ydoc = self.docs[xindex], self.docs[yindex]
         return self._tree_kernel_function(xdoc, ydoc)
 
+def _matching_nodes(doca, docb):
+    pass
 
 class PTKernel(object):
     def __init__(self, lambda_, mu):
@@ -27,25 +29,29 @@ class PTKernel(object):
         self.mu = mu
         self._lambda2 = lambda_ ** 2
 
-    def __call__(self, a, b):
-        return 0
+    def __call__(self, doca, docb):
+        result = 0
+        for a, b in _matching_nodes(doca, docb):
+            result += self._delta(a, b)
+        return result
 
-    def delta(self, a, b):
+    def _delta(self, a, b):
         if a.getOutdegree() == 0 or b.getOutdegree() == 0:
             result = self.mu * self._lambda2
         else:
             nca, ncb = a.getOutdegree(), b.getOutdegree()
-            result = self.mu * (self._lambda2 + self.sigma_delta_p(a, b, nca, ncb))
+            result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
         return result
 
-    def sigma_delta_p(self, a, b, nca, ncb):
+    def _sigma_delta_p(self, a, b, nca, ncb):
         DPS = [[0] * (ncb + 1)] * (nca + 1)
         DP = [[0] * (ncb + 1)] * (nca + 1)
         kmat = [0] * (nca + 1)
+
         for i in range(1, nca + 1):
             for j in range(1, ncb + 1):
                 if a.getChild(i - 1).getLabel() == b.getChild(j - 1).getLabel():
-                    DPS[i][j] = self.delta(a.getChild(i - 1), b.getChild(j - 1))
+                    DPS[i][j] = self._delta(a.getChild(i - 1), b.getChild(j - 1))
                     kmat[0] += DPS[i][j]
                 else:
                     DPS[i][j] = 0
@@ -55,12 +61,13 @@ class PTKernel(object):
                 DP[i][s - 1] = 0
             for j in range(ncb + 1):
                 DP[s - 1][j] = 0
+
             for i in range(s, nca + 1):
                 for j in range(s, ncb + 1):
                     DP[i][j] = DPS[i][j] + self.lambda_ * DP[i - 1][j] + \
                                self.lambda_ * DP[i][j - 1] - self._lambda2 * DP[i - 1][j - 1]
                     if a.getChild(i - 1).getLabel() == b.getChild(j - 1).getLabel():
-                        DPS[i][j] = self.delta(a.getChild(i - 1), b.getChild(j - 1)) * DP[i - 1][j - 1]
+                        DPS[i][j] = self._delta(a.getChild(i - 1), b.getChild(j - 1)) * DP[i - 1][j - 1]
                         kmat[s] += DPS[i][j]
 
         return sum(kmat)
