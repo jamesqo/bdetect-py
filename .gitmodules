@@ -1,0 +1,3 @@
+[submodule "deps/TweeboParser"]
+	path = deps/TweeboParser
+	url = git@github.com:jamesqo/TweeboParser.git
