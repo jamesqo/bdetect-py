@@ -1,3 +1,5 @@
+import treenode
+
 DOC_INDEX = 0
 
 def _get_tree_kernel_function(name):
@@ -17,9 +19,6 @@ class TweetKernel(object):
         treea, treeb = self.trees[indexa], self.trees[indexb]
         return self._tree_kernel_function(treea, treeb)
 
-def _matching_nodes(treea, treeb):
-    pass
-
 class PTKernel(object):
     def __init__(self, lambda_, mu):
         self.lambda_ = lambda_
@@ -28,7 +27,8 @@ class PTKernel(object):
 
     def __call__(self, treea, treeb):
         result = 0
-        for a, b in _matching_nodes(treea, treeb):
+        node_pairs = treenode.matching_descendants(treea, treeb)
+        for a, b in node_pairs:
             result += self._delta(a, b)
         return result
 

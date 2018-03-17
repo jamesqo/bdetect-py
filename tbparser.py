@@ -1,6 +1,15 @@
 import conllu
 import os
 
+from collections import namedtuple, OrderedDict
+
+TreeNode = namedtuple('TreeNode', ['data', 'children'])
+
+def _add_root(graph):
+    # Turns a multi-rooted graph into a tree by adding a root node.
+    data = OrderedDict([('id', 0)])
+    return TreeNode(data=data, children=graph)
+
 class TweeboParser(object):
     def __init__(self, tbparser_root, tweets_filename):
         tbparser_root = tbparser_root.rstrip('/')
@@ -26,5 +35,6 @@ class TweeboParser(object):
         with open(output_filename, 'r') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
-        trees = map(conllu.parse_tree, batches)
+        graphs = map(conllu.parse_tree, batches)
+        trees = map(_add_root, graphs)
         return trees
