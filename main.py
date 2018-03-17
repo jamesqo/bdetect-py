@@ -1,6 +1,7 @@
 import logging as log
 import os
 import pandas as pd
+import platform
 import simplejson as json
 import sys
 
@@ -80,8 +81,12 @@ def load_tweet_labels(X):
 def parse_tweets(X, tbparser_root, tweets_filename='tweets.txt'):
     log_mcall()
     tweets = sorted(X['text'])
+    # We can't run shell scripts on a Windows system. In that case, just assume that the
+    # corresponding output file is already present.
+    run_scripts = platform.system() != 'Windows'
     parser = TweeboParser(tbparser_root=tbparser_root,
-                          tweets_filename=tweets_filename)
+                          tweets_filename=tweets_filename,
+                          run_scripts=run_scripts)
     return parser.parse_tweets(tweets)
 
 def add_tweet_index(X):

@@ -12,23 +12,29 @@ def _add_root(graph):
     return TreeNode(data=data, children=graph)
 
 class TweeboParser(object):
-    def __init__(self, tbparser_root, tweets_filename):
+    def __init__(self, tbparser_root, tweets_filename, run_scripts=True):
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
         tweets_filename = os.path.join(tbparser_root, tweets_filename)
+
         self._tbparser_root = tbparser_root
         self._tweets_filename = tweets_filename
+        self._run_scripts = run_scripts
 
-        # Run TweeboParser install script
-        exec_and_check(f'{tbparser_root}/install.sh')
+        if run_scripts:
+            # Run TweeboParser install script
+            install_sh = os.path.join(tbparser_root, 'install.sh')
+            exec_and_check(install_sh)
 
     def parse_tweets(self, tweets):
-        with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
-            contents = '\n'.join(tweets)
-            tweets_file.write(contents)
+        if self._run_scripts:
+            with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
+                contents = '\n'.join(tweets)
+                tweets_file.write(contents)
 
-        # Run CMU's parser
-        exec_and_check(f'{self._tbparser_root}/run.sh {self._tweets_filename}')
+            # Run CMU's parser
+            run_sh = os.path.join(self._tbparser_root, 'run.sh')
+            exec_and_check(f'{run_sh} {self._tweets_filename}')
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
