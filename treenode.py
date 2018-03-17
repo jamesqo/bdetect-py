@@ -1,11 +1,33 @@
-def compare(nodea, nodeb):
-    pass
+def _comparison_tuple(node):
+    return node.data['upostag'], \
+           node.data['xpostag'], \
+           node.data['deprel'], \
+           node.data['form']
 
-def equals(nodea, nodeb):
-    pass
+def eq(nodea, nodeb):
+    return _comparison_tuple(nodea) == _comparison_tuple(nodeb)
+
+def lt(nodea, nodeb):
+    return _comparison_tuple(nodea) < _comparison_tuple(nodeb)
+
+def get_descendants(node, include_self=False):
+    # Non-recursive tree traversal algorithm. Taken from https://softwareengineering.stackexchange.com/a/226162/161912
+    result = []
+    stack = [node]
+    while stack:
+        desc = stack.pop()
+        if desc != node or include_self:
+            result.append(desc)
+        for child in desc.children:
+            stack.append(child)
+    return result
 
 def get_ordered_descendants(node, include_self=False):
     assert not include_self
+
+    result = get_descendants(node, include_self)
+    result.sort(key=_comparison_tuple)
+    return result
 
 def matching_descendants(nodea, nodeb, include_self=False):
     assert not include_self
@@ -18,12 +40,12 @@ def matching_descendants(nodea, nodeb, include_self=False):
     na, nb = len(nodesa), len(nodesb)
     
     while i < na and j < nb:
-        cmp = compare(nodesa[i], nodesb[j])
-        if cmp > 0:
+        if lt(nodesb[j], nodesa[i]):
             j += 1
-        elif cmp < 0:
+        elif lt(nodesa[i], nodesb[j]):
             i += 1
-        else: # cmp == 0, so the nodes match
+        else: # The nodes match
+            assert eq(nodesa[i], nodesb[j])
             j_old = j
             while True:
                 while True:
@@ -31,14 +53,14 @@ def matching_descendants(nodea, nodeb, include_self=False):
                     pairs.append(pair)
                     j += 1
 
-                    if not (j < nb and equals(nodesa[i], nodesb[j])):
+                    if not (j < nb and eq(nodesa[i], nodesb[j])):
                         break
 
                 i += 1
                 j_final = j
                 j = j_old
 
-                if not (i < na and equals(nodesa[i], nodesb[j])):
+                if not (i < na and eq(nodesa[i], nodesb[j])):
                     break
 
             j = j_final

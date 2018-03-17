@@ -35,6 +35,7 @@ class TweeboParser(object):
         with open(output_filename, 'r') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
+        # TODO: conllu.parse_tree is ignoring tokens with HEAD = -1 like hashtags, @ mentions, URLs, etc.
         graphs = map(conllu.parse_tree, batches)
         trees = map(_add_root, graphs)
         return trees

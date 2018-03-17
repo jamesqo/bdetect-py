@@ -47,7 +47,7 @@ class PTKernel(object):
 
         for i in range(1, nca + 1):
             for j in range(1, ncb + 1):
-                if tn.equals(a.children[i - 1], b.children[j - 1]):
+                if tn.eq(a.children[i - 1], b.children[j - 1]):
                     DPS[i][j] = self._delta(a.children[i - 1], b.children[j - 1])
                     kmat[0] += DPS[i][j]
                 else:
@@ -63,7 +63,7 @@ class PTKernel(object):
                 for j in range(s, ncb + 1):
                     DP[i][j] = DPS[i][j] + self.lambda_ * DP[i - 1][j] + \
                                self.lambda_ * DP[i][j - 1] - self._lambda2 * DP[i - 1][j - 1]
-                    if tn.equals(a.children[i - 1], b.children[j - 1]):
+                    if tn.eq(a.children[i - 1], b.children[j - 1]):
                         DPS[i][j] = self._delta(a.children[i - 1], b.children[j - 1]) * DP[i - 1][j - 1]
                         kmat[s] += DPS[i][j]
 
