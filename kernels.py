@@ -1,4 +1,4 @@
-import treenode
+import treenode as tn
 
 DOC_INDEX = 0
 
@@ -20,23 +20,23 @@ class TweetKernel(object):
         return self._tree_kernel_function(treea, treeb)
 
 class PTKernel(object):
-    def __init__(self, lambda_, mu):
+    def __init__(self, lambda_=0.4, mu=0.4):
         self.lambda_ = lambda_
         self.mu = mu
         self._lambda2 = lambda_ ** 2
 
     def __call__(self, treea, treeb):
         result = 0
-        node_pairs = treenode.matching_descendants(treea, treeb)
+        node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
             result += self._delta(a, b)
         return result
 
     def _delta(self, a, b):
-        if a.getOutdegree() == 0 or b.getOutdegree() == 0:
+        nca, ncb = len(a.children), len(b.children)
+        if nca == 0 or ncb == 0:
             result = self.mu * self._lambda2
         else:
-            nca, ncb = a.getOutdegree(), b.getOutdegree()
             result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
         return result
 
@@ -47,8 +47,8 @@ class PTKernel(object):
 
         for i in range(1, nca + 1):
             for j in range(1, ncb + 1):
-                if a.getChild(i - 1).getLabel() == b.getChild(j - 1).getLabel():
-                    DPS[i][j] = self._delta(a.getChild(i - 1), b.getChild(j - 1))
+                if tn.equals(a.children[i - 1], b.children[j - 1]):
+                    DPS[i][j] = self._delta(a.children[i - 1], b.children[j - 1])
                     kmat[0] += DPS[i][j]
                 else:
                     DPS[i][j] = 0
@@ -63,8 +63,8 @@ class PTKernel(object):
                 for j in range(s, ncb + 1):
                     DP[i][j] = DPS[i][j] + self.lambda_ * DP[i - 1][j] + \
                                self.lambda_ * DP[i][j - 1] - self._lambda2 * DP[i - 1][j - 1]
-                    if a.getChild(i - 1).getLabel() == b.getChild(j - 1).getLabel():
-                        DPS[i][j] = self._delta(a.getChild(i - 1), b.getChild(j - 1)) * DP[i - 1][j - 1]
+                    if tn.equals(a.children[i - 1], b.children[j - 1]):
+                        DPS[i][j] = self._delta(a.children[i - 1], b.children[j - 1]) * DP[i - 1][j - 1]
                         kmat[s] += DPS[i][j]
 
         return sum(kmat)
