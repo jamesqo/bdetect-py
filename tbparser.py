@@ -2,6 +2,7 @@ import conllu
 import os
 
 from collections import namedtuple, OrderedDict
+from util import exec_and_check
 
 TreeNode = namedtuple('TreeNode', ['data', 'children'])
 
@@ -19,7 +20,7 @@ class TweeboParser(object):
         self._tweets_filename = tweets_filename
 
         # Run TweeboParser install script
-        os.system(f'{tbparser_root}/install.sh')
+        exec_and_check(f'{tbparser_root}/install.sh')
 
     def parse_tweets(self, tweets):
         with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
@@ -27,7 +28,7 @@ class TweeboParser(object):
             tweets_file.write(contents)
 
         # Run CMU's parser
-        os.system(f'{self._tbparser_root}/run.sh {self._tweets_filename}')
+        exec_and_check(f'{self._tbparser_root}/run.sh {self._tweets_filename}')
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
