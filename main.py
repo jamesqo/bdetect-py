@@ -1,7 +1,7 @@
 import logging as log
+import os
 import pandas as pd
 import simplejson as json
-import spacy
 import sys
 
 from argparse import ArgumentParser
@@ -12,11 +12,14 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 from svm import TweetSVC
+from tbparser import TweeboParser
 from util import log_mcall
 
 TWEETS_ROOT = 'data/bullyingV3'
 TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
 LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
+
+TBPARSER_ROOT = 'deps/TweeboParser'
 
 def parse_args():
     parser = ArgumentParser()
@@ -74,19 +77,18 @@ def load_tweet_labels(X):
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_docs(X, model='en'):
+def parse_tweets(X, tbparser_root, tweets_filename='tweets.txt'):
     log_mcall()
-    nlp = spacy.load(model)
-    texts = sorted(X['text'])
-    # TODO: Parallelize
-    docs = [nlp(text) for text in texts]
-    return docs
+    tweets = sorted(X['text'])
+    parser = TweeboParser(tbparser_root=tbparser_root,
+                          tweets_filename=tweets_filename)
+    return parser.parse_tweets(tweets)
 
-def add_doc_index(X):
+def add_tweet_index(X):
     log_mcall()
-    texts = sorted(X['text'])
-    index_map = {text: index for index, text in enumerate(texts)}
-    X['doc_index'] = X['text'].apply(lambda text: index_map[text])
+    tweets = sorted(X['text'])
+    index_map = {tweet: index for index, tweet in enumerate(tweets)}
+    X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
     return X
 
 def main():
@@ -97,8 +99,9 @@ def main():
     Y = load_tweet_labels(X)
     assert X.shape[0] == Y.shape[0]
 
-    docs = parse_docs(X)
-    X = add_doc_index(X)
+    # Use CMU's TweeboParser to produce a dependency tree for each tweet.
+    trees = parse_tweets(X, tbparser_root=TBPARSER_ROOT)
+    X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 
     # NLP Task A: Bullying trace classification
@@ -106,7 +109,7 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in 'ptk', 'sptk', 'csptk':
-        svc = TweetSVC(docs=docs, tree_kernel=kernel)
+        svc = TweetSVC(trees=trees, tree_kernel=kernel)
         svc.fit(X_train, y_train)
         y_predict = svc.predict(X_test)
 

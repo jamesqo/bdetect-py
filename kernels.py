@@ -1,25 +1,23 @@
+DOC_INDEX = 0
+
 def _get_tree_kernel_function(name):
     if name == 'ptk':
         return PTKernel()
 
     raise ValueError(f"Unrecognized tree kernel '{name}'")
 
-
-DOC_INDEX = 0
-
-
 class TweetKernel(object):
-    def __init__(self, docs, tree_kernel):
-        self.docs = docs
+    def __init__(self, trees, tree_kernel):
+        self.trees = trees
         self.tree_kernel = tree_kernel
         self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
     def __call__(self, a, b):
         indexa, indexb = int(a[DOC_INDEX]), int(b[DOC_INDEX])
-        doca, docb = self.docs[indexa], self.docs[indexb]
-        return self._tree_kernel_function(doca, docb)
+        treea, treeb = self.trees[indexa], self.trees[indexb]
+        return self._tree_kernel_function(treea, treeb)
 
-def _matching_nodes(doca, docb):
+def _matching_nodes(treea, treeb):
     pass
 
 class PTKernel(object):
@@ -28,9 +26,9 @@ class PTKernel(object):
         self.mu = mu
         self._lambda2 = lambda_ ** 2
 
-    def __call__(self, doca, docb):
+    def __call__(self, treea, treeb):
         result = 0
-        for a, b in _matching_nodes(doca, docb):
+        for a, b in _matching_nodes(treea, treeb):
             result += self._delta(a, b)
         return result
 
