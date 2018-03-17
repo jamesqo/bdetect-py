@@ -39,7 +39,7 @@ def parse_args():
 
 def load_tweets(max_tweets=-1):
     log_mcall()
-    with open(TWEETS_FILENAME) as tweets_file:
+    with open(TWEETS_FILENAME, encoding='utf-8') as tweets_file:
         tweets = json.load(tweets_file)
     
     for tweet in tweets:

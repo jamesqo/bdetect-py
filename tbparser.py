@@ -22,7 +22,7 @@ class TweeboParser(object):
         os.system(f'{tbparser_root}/install.sh')
 
     def parse_tweets(self, tweets):
-        with open(self._tweets_filename, 'w') as tweets_file:
+        with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
             contents = '\n'.join(tweets)
             tweets_file.write(contents)
 
@@ -32,7 +32,7 @@ class TweeboParser(object):
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
         output_filename = f'{self._tweets_filename}.predict'
-        with open(output_filename, 'r') as output_file:
+        with open(output_filename, 'r', encoding='utf-8') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
         # TODO: conllu.parse_tree is ignoring tokens with HEAD = -1 like hashtags, @ mentions, URLs, etc.
