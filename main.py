@@ -42,7 +42,7 @@ def parse_args():
     )
     parser.add_argument(
         '-r', '--refresh-predictions',
-        help="refresh predictions by running TweeboParser on the corpus (this will take a while)",
+        help="refresh predictions by re-running TweeboParser on the corpus (this will take a while)",
         dest='refresh_predictions',
         action='store_true'
     )
