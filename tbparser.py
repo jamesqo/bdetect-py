@@ -24,7 +24,7 @@ class TweeboParser(object):
         if run_scripts:
             # Run TweeboParser install script
             install_sh = os.path.join(tbparser_root, 'install.sh')
-            exec_and_check(install_sh)
+            exec_and_check(f'bash {install_sh}')
 
     def parse_tweets(self, tweets):
         if self._run_scripts:
@@ -34,7 +34,7 @@ class TweeboParser(object):
 
             # Run CMU's parser
             run_sh = os.path.join(self._tbparser_root, 'run.sh')
-            exec_and_check(f'{run_sh} {self._tweets_filename}')
+            exec_and_check(f'bash {run_sh} {self._tweets_filename}')
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
