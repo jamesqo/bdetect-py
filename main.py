@@ -93,6 +93,7 @@ def load_tweet_labels(X):
     # (X and Y may not have the same number of rows as Twitter has removed some tweets)
     X['tweet_absent'] = False
     X_Y = pd.concat([X, Y], axis=1)
+    X.drop('tweet_absent', axis=1, inplace=True)
     X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
 
     Y = X_Y.drop(columns=X.columns.values)

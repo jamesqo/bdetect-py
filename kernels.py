@@ -2,13 +2,15 @@ import sys
 
 import treenode as tn
 
-DOC_INDEX = 0
-
 def _get_tree_kernel_function(name):
     if name == 'ptk':
         return PTKernel()
 
     raise ValueError(f"Unrecognized tree kernel '{name}'")
+
+def _get_tweet_index(row):
+    TWEET_INDEX_COL_NO = 0
+    return int(row[TWEET_INDEX_COL_NO])
 
 class TweetKernel(object):
     def __init__(self, trees, tree_kernel):
@@ -17,7 +19,7 @@ class TweetKernel(object):
         self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
     def __call__(self, a, b):
-        indexa, indexb = int(a[DOC_INDEX]), int(b[DOC_INDEX])
+        indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
         treea, treeb = self.trees[indexa], self.trees[indexb]
         return self._tree_kernel_function(treea, treeb)
 
@@ -32,7 +34,6 @@ class PTKernel(object):
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
             result += self._delta(a, b)
-        print(result, file=sys.stderr)
         return result
 
     def _delta(self, a, b):
