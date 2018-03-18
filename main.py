@@ -1,7 +1,6 @@
 import logging as log
 import os
 import pandas as pd
-import platform
 import simplejson as json
 import sys
 
@@ -21,6 +20,7 @@ TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
 LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
 
 TBPARSER_ROOT = 'deps/TweeboParser'
+TBPARSER_INPUT_FILENAME = 'tweets.txt'
 
 def parse_args():
     parser = ArgumentParser()
@@ -78,15 +78,12 @@ def load_tweet_labels(X):
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_tweets(X, tbparser_root, tweets_filename='tweets.txt'):
+def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False):
     log_mcall()
     tweets = sorted(X['text'])
-    # We can't run shell scripts on a Windows system. In that case, just assume that the
-    # corresponding output file is already present.
-    run_scripts = platform.system() != 'Windows'
     parser = TweeboParser(tbparser_root=tbparser_root,
                           tweets_filename=tweets_filename,
-                          run_scripts=run_scripts)
+                          refresh_predictions=refresh_predictions)
     return parser.parse_tweets(tweets)
 
 def add_tweet_index(X):
@@ -105,7 +102,10 @@ def main():
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
-    trees = parse_tweets(X, tbparser_root=TBPARSER_ROOT)
+    trees = parse_tweets(X,
+                         tbparser_root=TBPARSER_ROOT,
+                         tweets_filename=TBPARSER_INPUT_FILENAME,
+                         refresh_predictions=args.refresh_predictions)
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 

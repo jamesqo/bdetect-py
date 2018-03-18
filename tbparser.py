@@ -15,16 +15,17 @@ def _remove_newlines(tweet):
     return tweet.replace('\n', ' ').replace('\r', ' ')
 
 class TweeboParser(object):
-    def __init__(self, tbparser_root, tweets_filename, run_scripts=True):
+    def __init__(self, tbparser_root, tweets_filename, refresh_predictions=False):
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
         tweets_filename = os.path.join(tbparser_root, tweets_filename)
 
         self._tbparser_root = tbparser_root
         self._tweets_filename = tweets_filename
-        self._run_scripts = run_scripts
+        self._output_filename = f'{tweets_filename}.predict'
+        self._run_scripts = refresh_predictions or not os.path.isfile(self._output_filename)
 
-        if run_scripts:
+        if self._run_scripts:
             # Run TweeboParser install script
             exec_and_check(f'cd {tbparser_root} && bash install.sh')
 
@@ -42,8 +43,7 @@ class TweeboParser(object):
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
-        output_filename = f'{self._tweets_filename}.predict'
-        with open(output_filename, 'r', encoding='utf-8') as output_file:
+        with open(self._output_filename, 'r', encoding='utf-8') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
         # TODO: conllu.parse_tree is ignoring tokens with HEAD = -1 like hashtags, @ mentions, URLs, etc.
