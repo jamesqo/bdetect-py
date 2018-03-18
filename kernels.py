@@ -1,3 +1,4 @@
+import logging as log
 import sys
 
 import treenode as tn
