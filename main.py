@@ -26,15 +26,25 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
         '-d', '--debug',
-        help="Print debug information",
-        action='store_const', dest='log_level', const=log.DEBUG,
+        help="print debug information",
+        dest='log_level',
+        action='store_const',
+        const=log.DEBUG,
         default=log.WARNING
     )
     parser.add_argument(
         '-m', '--max-tweets',
-        help="Maximum number of tweets to load",
-        dest='max_tweets', type=int,
+        help="maximum number of tweets to load",
+        dest='max_tweets',
+        action='store',
+        type=int,
         default=-1
+    )
+    parser.add_argument(
+        '-r', '--refresh-predictions',
+        help="refresh predictions by running TweeboParser on the corpus (this will take a while)",
+        dest='refresh_predictions',
+        action='store_true'
     )
     return parser.parse_args()
 
