@@ -32,6 +32,7 @@ class PTKernel(object):
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
             result += self._delta(a, b)
+        print(result, file=sys.stderr)
         return result
 
     def _delta(self, a, b):

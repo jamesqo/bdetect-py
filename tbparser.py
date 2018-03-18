@@ -2,7 +2,7 @@ import conllu
 import os
 
 from collections import namedtuple, OrderedDict
-from util import exec_and_check
+from util import exec_and_check, log_mcall
 
 TreeNode = namedtuple('TreeNode', ['data', 'children'])
 
@@ -16,6 +16,7 @@ def _remove_newlines(tweet):
 
 class TweeboParser(object):
     def __init__(self, tbparser_root, tweets_filename, refresh_predictions=False):
+        log_mcall()
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
         tweets_filename = os.path.join(tbparser_root, tweets_filename)
@@ -30,6 +31,7 @@ class TweeboParser(object):
             exec_and_check(f'cd {tbparser_root} && bash install.sh')
 
     def parse_tweets(self, tweets):
+        log_mcall()
         if self._run_scripts:
             with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
                 # Twitter permits newlines in tweets, causing problems with the dependency parser
@@ -39,6 +41,8 @@ class TweeboParser(object):
                 tweets_file.write(contents)
 
             # Run CMU's parser
+            # TODO: It hangs for a long time after making the predictions because it generates 4000+
+            # files (one per tweet) in working_dir/test_score. Find out how to make it stop that.
             exec_and_check(f'cd {self._tbparser_root} && bash run.sh {self._tweets_filename}')
 
         # Parse output file, which is formatted in CoNLL-X
