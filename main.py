@@ -103,14 +103,15 @@ def load_tweet_labels(X):
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False):
+def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True):
     log_mcall()
     tweets = sorted(X['text'])
     parser = TweeboParser(tbparser_root=tbparser_root,
                           tweets_filename=tweets_filename,
                           refresh_predictions=refresh_predictions)
     trees = parser.parse_tweets(tweets)
-    remove_trivia(trees)
+    if scrub_trivia:
+        remove_trivia(trees)
     return trees
 
 def remove_trivia(trees):
