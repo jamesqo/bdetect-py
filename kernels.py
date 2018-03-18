@@ -1,3 +1,5 @@
+import sys
+
 import treenode as tn
 
 DOC_INDEX = 0

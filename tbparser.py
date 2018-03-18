@@ -11,6 +11,9 @@ def _add_root(graph):
     data = OrderedDict([('id', 0)])
     return TreeNode(data=data, children=graph)
 
+def _remove_newlines(tweet):
+    return tweet.replace('\n', ' ').replace('\r', ' ')
+
 class TweeboParser(object):
     def __init__(self, tbparser_root, tweets_filename, run_scripts=True):
         tbparser_root = tbparser_root.rstrip('/')
@@ -30,7 +33,7 @@ class TweeboParser(object):
             with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
                 # Twitter permits newlines in tweets, causing problems with the dependency parser
                 # which expects one tweet per line in the input file.
-                tweets = map(lambda tweet: tweet.replace('\n', ' '), tweets)
+                tweets = map(_remove_newlines, tweets)
                 contents = '\n'.join(tweets)
                 tweets_file.write(contents)
 
