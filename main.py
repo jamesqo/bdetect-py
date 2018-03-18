@@ -15,11 +15,11 @@ from svm import TweetSVC
 from tbparser import TweeboParser
 from util import log_mcall
 
-TWEETS_ROOT = 'data/bullyingV3'
-TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
-LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
+TWEETS_ROOT = os.path.join('data', 'bullyingV3')
+TWEETS_FILENAME = os.path.join(TWEETS_ROOT, 'tweet.json')
+LABELS_FILENAME = os.path.join(TWEETS_ROOT, 'data.csv')
 
-TBPARSER_ROOT = 'deps/TweeboParser'
+TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FILENAME = 'tweets.txt'
 
 def parse_args():
