@@ -35,8 +35,17 @@ def parse_args():
     parser.add_argument(
         '-m', '--max-tweets',
         metavar='LIMIT',
-        help="load at most LIMIT tweets into the corpus (useful for quick debugging)",
+        help="load at most LIMIT tweets into the corpus. useful for quick debugging",
         dest='max_tweets',
+        action='store',
+        type=int,
+        default=-1
+    )
+    parser.add_argument(
+        '-n', '--n-jobs',
+        metavar='N',
+        help="use N cpus to compute gram matrix in parallel. N=-1 means use all cpus, N=-2 means use all but 1 cpu, and so on. setting N=1 is recommended for debugging",
+        dest='n_jobs',
         action='store',
         type=int,
         default=-1
@@ -126,8 +135,8 @@ def main():
 
     for kernel in 'ptk', 'sptk', 'csptk':
         svc = TweetSVC(trees=trees, tree_kernel=kernel)
-        svc.fit(X_train, y_train)
-        y_predict = svc.predict(X_test)
+        svc.fit(X_train, y_train, n_jobs=args.n_jobs)
+        y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
 
         score = accuracy_score(y_true=y_test, y_pred=y_predict)
         print(f"Task A, {kernel} score: {score}")
