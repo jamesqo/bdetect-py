@@ -7,7 +7,7 @@
             "stopOnEntry": true,
             "pythonPath":"${config:python.pythonPath}",
             "program": "${workspaceFolder}/main.py",
-            "args": [ "-d", "-n", "1" ],
+            "args": [ "-d", "-m", "100", "-n", "1" ],
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",

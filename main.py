@@ -127,6 +127,7 @@ def main():
                          tbparser_root=TBPARSER_ROOT,
                          tweets_filename=TBPARSER_INPUT_FILENAME,
                          refresh_predictions=args.refresh_predictions)
+    assert len(trees) == X.shape[0]
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 

@@ -2,17 +2,24 @@ import conllu
 import os
 
 from collections import namedtuple, OrderedDict
+from itertools import islice
+
 from util import exec_and_check, log_mcall
 
-TreeNode = namedtuple('TreeNode', ['data', 'children'])
-
-def _add_root(graph):
+def _add_root(graph, tweet):
     # Turns a multi-rooted graph into a tree by adding a root node.
-    data = OrderedDict([('id', 0)])
-    return TreeNode(data=data, children=graph)
+    return TreeRoot(children=graph, tweet=tweet)
 
 def _remove_newlines(tweet):
     return tweet.replace('\n', ' ').replace('\r', ' ')
+
+class TreeRoot(object):
+    def __init__(self, children, tweet):
+        self.children = children
+        self._tweet = tweet
+
+    def __str__(self):
+        return self._tweet
 
 class TweeboParser(object):
     def __init__(self, tbparser_root, tweets_filename, refresh_predictions=False):
@@ -50,7 +57,8 @@ class TweeboParser(object):
         with open(self._output_filename, 'r', encoding='utf-8') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
+        batches = islice(batches, len(tweets))
         # TODO: conllu.parse_tree is ignoring tokens with HEAD = -1 like hashtags, @ mentions, URLs, etc.
         graphs = map(conllu.parse_tree, batches)
-        trees = map(_add_root, graphs)
+        trees = [_add_root(graph, tweet) for graph, tweet in zip(graphs, tweets)]
         return trees
