@@ -28,6 +28,9 @@ class TweeboParser(object):
     def parse_tweets(self, tweets):
         if self._run_scripts:
             with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
+                # Twitter permits newlines in tweets, causing problems with the dependency parser
+                # which expects one tweet per line in the input file.
+                tweets = map(lambda tweet: tweet.replace('\n', ' '), tweets)
                 contents = '\n'.join(tweets)
                 tweets_file.write(contents)
 

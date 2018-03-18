@@ -10,7 +10,7 @@ def _get_tree_kernel_function(name):
 
 class TweetKernel(object):
     def __init__(self, trees, tree_kernel):
-        self.trees = trees
+        self.trees = list(trees)
         self.tree_kernel = tree_kernel
         self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel)
 
