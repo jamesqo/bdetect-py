@@ -1,3 +1,4 @@
+import html
 import logging as log
 import os
 import pandas as pd
@@ -68,6 +69,7 @@ def load_tweets(max_tweets=-1):
             del tweet['entities']
         if 'user' in tweet:
             del tweet['user']
+
     X = json_normalize(tweets)
 
     X.drop('id', axis=1, inplace=True)
@@ -77,6 +79,8 @@ def load_tweets(max_tweets=-1):
 
     if max_tweets != -1:
         X = X.head(n=max_tweets)
+
+    X['text'].apply(html.unescape, inplace=True)
 
     return X[['text']]
 
