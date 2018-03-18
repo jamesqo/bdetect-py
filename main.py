@@ -80,7 +80,7 @@ def load_tweets(max_tweets=-1):
     if max_tweets != -1:
         X = X.head(n=max_tweets)
 
-    X['text'].apply(html.unescape, inplace=True)
+    X['text'] = X['text'].apply(html.unescape)
 
     return X[['text']]
 
