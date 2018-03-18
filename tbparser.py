@@ -58,7 +58,6 @@ class TweeboParser(object):
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
         batches = islice(batches, len(tweets))
-        # TODO: conllu.parse_tree is ignoring tokens with HEAD = -1 like hashtags, @ mentions, URLs, etc.
         graphs = map(conllu.parse_tree, batches)
         trees = [_add_root(graph, tweet) for graph, tweet in zip(graphs, tweets)]
         return trees

@@ -105,7 +105,20 @@ def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False):
     parser = TweeboParser(tbparser_root=tbparser_root,
                           tweets_filename=tweets_filename,
                           refresh_predictions=refresh_predictions)
-    return parser.parse_tweets(tweets)
+    trees = parser.parse_tweets(tweets)
+    remove_trivia(trees)
+    return trees
+
+def remove_trivia(trees):
+    # Filter out nodes with HEAD = -1 from the dependency tree, except for
+    # hashtags and @ mentions which provide valuable information.
+    # Such nodes are direct children of the root node, so we don't need to
+    # exhaustively search the tree.
+    NONTRIVIA_TAGS = ('#', '@')
+    for tree in trees:
+        tree.children[:] = [child for child in tree.children
+                                  if child.data['head'] != -1 or
+                                     child.data['upostag'] in NONTRIVIA_TAGS]
 
 def add_tweet_index(X):
     log_mcall()
@@ -128,6 +141,7 @@ def main():
                          tweets_filename=TBPARSER_INPUT_FILENAME,
                          refresh_predictions=args.refresh_predictions)
     assert len(trees) == X.shape[0]
+
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 
