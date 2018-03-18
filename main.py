@@ -34,7 +34,8 @@ def parse_args():
     )
     parser.add_argument(
         '-m', '--max-tweets',
-        help="maximum number of tweets to load",
+        metavar='LIMIT',
+        help="load at most LIMIT tweets into the corpus (useful for quick debugging)",
         dest='max_tweets',
         action='store',
         type=int,
