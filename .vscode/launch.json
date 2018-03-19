@@ -1,15 +1,19 @@
 {
-    "name": "Python: Current File",
-    "type": "python",
-    "request": "launch",
-    "stopOnEntry": true,
-    "pythonPath":"${config:python.pythonPath}",
-    "program": "${workspaceFolder}/main.py",
-    "args": [ "-d", "-m", "100" ],
-    "cwd": "${workspaceFolder}",
-    "env": {},
-    "envFile": "${workspaceFolder}/.env",
-    "debugOptions": [
-        "RedirectOutput"
-    ],
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath":"${config:python.pythonPath}",
+            "program": "${workspaceFolder}/main.py",
+            "args": [ "-d", "-m", "100", "-n", "1" ],
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        }
+    ]
 }

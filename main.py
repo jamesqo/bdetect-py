@@ -1,7 +1,7 @@
+import html
 import logging as log
 import os
 import pandas as pd
-import platform
 import simplejson as json
 import sys
 
@@ -16,25 +16,46 @@ from svm import TweetSVC
 from tbparser import TweeboParser
 from util import log_mcall
 
-TWEETS_ROOT = 'data/bullyingV3'
-TWEETS_FILENAME = f'{TWEETS_ROOT}/tweet.json'
-LABELS_FILENAME = f'{TWEETS_ROOT}/data.csv'
+TWEETS_ROOT = os.path.join('data', 'bullyingV3')
+TWEETS_FILENAME = os.path.join(TWEETS_ROOT, 'tweet.json')
+LABELS_FILENAME = os.path.join(TWEETS_ROOT, 'data.csv')
 
-TBPARSER_ROOT = 'deps/TweeboParser'
+TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
+TBPARSER_INPUT_FILENAME = 'tweets.txt'
 
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
         '-d', '--debug',
-        help="Print debug information",
-        action='store_const', dest='log_level', const=log.DEBUG,
+        help="print debug information",
+        dest='log_level',
+        action='store_const',
+        const=log.DEBUG,
         default=log.WARNING
     )
     parser.add_argument(
         '-m', '--max-tweets',
-        help="Maximum number of tweets to load",
-        dest='max_tweets', type=int,
+        metavar='LIMIT',
+        help="load at most LIMIT tweets into the corpus. useful for quick debugging",
+        dest='max_tweets',
+        action='store',
+        type=int,
         default=-1
+    )
+    parser.add_argument(
+        '-n', '--n-jobs',
+        metavar='N',
+        help="use N cpus to compute gram matrix in parallel. N=-1 means use all cpus, N=-2 means use all but 1 cpu, and so on. setting N=1 is recommended for debugging",
+        dest='n_jobs',
+        action='store',
+        type=int,
+        default=-1
+    )
+    parser.add_argument(
+        '-r', '--refresh-predictions',
+        help="refresh predictions by re-running TweeboParser on the corpus (this will take a while)",
+        dest='refresh_predictions',
+        action='store_true'
     )
     return parser.parse_args()
 
@@ -48,6 +69,7 @@ def load_tweets(max_tweets=-1):
             del tweet['entities']
         if 'user' in tweet:
             del tweet['user']
+
     X = json_normalize(tweets)
 
     X.drop('id', axis=1, inplace=True)
@@ -57,6 +79,8 @@ def load_tweets(max_tweets=-1):
 
     if max_tweets != -1:
         X = X.head(n=max_tweets)
+
+    X['text'] = X['text'].apply(html.unescape)
 
     return X[['text']]
 
@@ -73,21 +97,33 @@ def load_tweet_labels(X):
     # (X and Y may not have the same number of rows as Twitter has removed some tweets)
     X['tweet_absent'] = False
     X_Y = pd.concat([X, Y], axis=1)
+    X.drop('tweet_absent', axis=1, inplace=True)
     X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
 
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_tweets(X, tbparser_root, tweets_filename='tweets.txt'):
+def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True):
     log_mcall()
     tweets = sorted(X['text'])
-    # We can't run shell scripts on a Windows system. In that case, just assume that the
-    # corresponding output file is already present.
-    run_scripts = platform.system() != 'Windows'
     parser = TweeboParser(tbparser_root=tbparser_root,
                           tweets_filename=tweets_filename,
-                          run_scripts=run_scripts)
-    return parser.parse_tweets(tweets)
+                          refresh_predictions=refresh_predictions)
+    trees = parser.parse_tweets(tweets)
+    if scrub_trivia:
+        remove_trivia(trees)
+    return trees
+
+def remove_trivia(trees):
+    # Filter out nodes with HEAD = -1 from the dependency tree, except for
+    # hashtags and @ mentions which provide valuable information.
+    # Such nodes are direct children of the root node, so we don't need to
+    # exhaustively search the tree.
+    NONTRIVIA_TAGS = ('#', '@')
+    for tree in trees:
+        tree.children[:] = [child for child in tree.children
+                                  if child.data['head'] != -1 or
+                                     child.data['upostag'] in NONTRIVIA_TAGS]
 
 def add_tweet_index(X):
     log_mcall()
@@ -105,7 +141,12 @@ def main():
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
-    trees = parse_tweets(X, tbparser_root=TBPARSER_ROOT)
+    trees = parse_tweets(X,
+                         tbparser_root=TBPARSER_ROOT,
+                         tweets_filename=TBPARSER_INPUT_FILENAME,
+                         refresh_predictions=args.refresh_predictions)
+    assert len(trees) == X.shape[0]
+
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 
@@ -115,8 +156,8 @@ def main():
 
     for kernel in 'ptk', 'sptk', 'csptk':
         svc = TweetSVC(trees=trees, tree_kernel=kernel)
-        svc.fit(X_train, y_train)
-        y_predict = svc.predict(X_test)
+        svc.fit(X_train, y_train, n_jobs=args.n_jobs)
+        y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
 
         score = accuracy_score(y_true=y_test, y_pred=y_predict)
         print(f"Task A, {kernel} score: {score}")
