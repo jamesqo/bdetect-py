@@ -1,4 +1,4 @@
-conllu
+conllu>=0.8
 numpy
 pandas
 simplejson

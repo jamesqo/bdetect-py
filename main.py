@@ -126,7 +126,7 @@ def _scrub_trivia(trees):
     # hashtags and @ mentions which provide valuable information.
     # Such nodes are direct children of the root node, so we don't need to
     # exhaustively search the tree.
-    NONTRIVIA_TAGS = ('#', '@')
+    NONTRIVIA_TAGS = ['#', '@']
     for tree in trees:
         tree.children[:] = [child for child in tree.children
                                   if child.data['head'] != -1 or
@@ -148,7 +148,7 @@ def _lemmatize(trees):
     if not nltk.download('wordnet', quiet=True):
         raise RuntimeError("Failed to download WordNet corpus")
 
-    # TODO: Decide experimentally if lemmatization or stemming performs better.
+    # TODO: Decide experimentally if lemmatization or stemming (or both) performs better.
     stem = PorterStemmer()
     for tree in trees:
         for child in tree.children:
