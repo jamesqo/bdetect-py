@@ -176,6 +176,13 @@ def print_scores(task, model, y_test, y_predict):
         print(f"{name}: {score}")
     print()
 
+def save_test_session(X_test, y_test, y_predict):
+    X_test.to_csv('test_set.log', index=False)
+    y_test.to_csv('labels.log', index=False)
+    with open('predictions.log', 'w') as predict_file:
+        contents = '\n'.join(map(str, y_predict))
+        predict_file.write(contents)
+
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
@@ -203,6 +210,7 @@ def main():
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
         print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
+        save_test_session(X_test=X_test, y_test=y_test, y_predict=y_predict)
 
 if __name__ == '__main__':
     start = datetime.now()

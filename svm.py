@@ -22,5 +22,5 @@ class TweetSVC(object):
     def predict(self, X, n_jobs=-1):
         log_mcall()
         kernel_matrix = pairwise_kernels(X, self._X, metric=self._kernel, n_jobs=n_jobs)
-        np.savetxt('kernels.pred.log', kernel_matrix)
+        np.savetxt('kernels.predict.log', kernel_matrix)
         return self._svc.predict(kernel_matrix)
