@@ -7,11 +7,12 @@ import simplejson as json
 import sys
 
 from argparse import ArgumentParser
+from collections import OrderedDict
 from datetime import datetime
 from multiprocessing import Pool
 from nltk.stem.porter import PorterStemmer
 from pandas.io.json import json_normalize
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
 from svm import TweetSVC
@@ -161,6 +162,19 @@ def add_tweet_index(X):
     X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
     return X
 
+def print_scores(task, model, y_test, y_predict):
+    scores = OrderedDict([
+        ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
+        ('precision', precision_score(y_true=y_test, y_pred=y_predict)),
+        ('recall', recall_score(y_true=y_test, y_pred=y_predict)),
+        ('f1', f1_score(y_true=y_test, y_pred=y_predict))
+    ])
+
+    print(f"task {task}, model {model}")
+    for name, score in scores.items():
+        print(f"{name}: {score}")
+    print()
+
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
@@ -187,9 +201,7 @@ def main():
         svc = TweetSVC(trees=trees, tree_kernel=kernel)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
-
-        score = accuracy_score(y_true=y_test, y_pred=y_predict)
-        print(f"Task A, {kernel} score: {score}")
+        print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
 
 if __name__ == '__main__':
     start = datetime.now()
