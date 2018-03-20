@@ -80,10 +80,11 @@ def load_tweets(max_tweets=-1):
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
 
+    X['text'] = X['text'].apply(html.unescape)
+    X.sort_values('text', inplace=True)
+    
     if max_tweets != -1:
         X = X.head(n=max_tweets)
-
-    X['text'] = X['text'].apply(html.unescape)
 
     return X[['text']]
 
