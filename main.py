@@ -10,7 +10,6 @@ from argparse import ArgumentParser
 from datetime import datetime
 from multiprocessing import Pool
 from nltk.stem.porter import PorterStemmer
-from nltk.stem.wordnet import WordNetLemmatizer
 from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -137,7 +136,7 @@ def _lemmatize(trees):
         assert node.data['lemma'] == '_'
 
         form = node.data['form']
-        lemma = stem.stem(lem.lemmatize(form))
+        lemma = stem.stem(form)
         node.data['lemma'] = lemma
 
         for child in node.children:
@@ -146,8 +145,9 @@ def _lemmatize(trees):
     log_mcall()
     if not nltk.download('wordnet', quiet=True):
         raise RuntimeError("Failed to download WordNet corpus")
-    # TODO: Decide experimentally if lemmatization or stemming (or both) performs better.
-    lem, stem = WordNetLemmatizer(), PorterStemmer()
+
+    # TODO: Decide experimentally if lemmatization or stemming performs better.
+    stem = PorterStemmer()
     for tree in trees:
         for child in tree.children:
             do_lemmatize(child)
