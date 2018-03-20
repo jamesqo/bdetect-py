@@ -46,8 +46,8 @@ class PTKernel(object):
         return result
 
     def _sigma_delta_p(self, a, b, nca, ncb):
-        DPS = [[0] * (ncb + 1)] * (nca + 1)
-        DP = [[0] * (ncb + 1)] * (nca + 1)
+        DPS = [[0 for i in range(ncb + 1)] for j in range(nca + 1)]
+        DP = [[0 for i in range(ncb + 1)] for j in range(nca + 1)]
         kmat = [0] * (nca + 1)
 
         for i in range(1, nca + 1):
