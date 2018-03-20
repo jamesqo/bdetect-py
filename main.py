@@ -1,5 +1,6 @@
 import html
 import logging as log
+import nltk
 import os
 import pandas as pd
 import simplejson as json
@@ -8,6 +9,8 @@ import sys
 from argparse import ArgumentParser
 from datetime import datetime
 from multiprocessing import Pool
+from nltk.stem.porter import PorterStemmer
+from nltk.stem.wordnet import WordNetLemmatizer
 from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -103,7 +106,7 @@ def load_tweet_labels(X):
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True):
+def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
     log_mcall()
     tweets = sorted(X['text'])
     parser = TweeboParser(tbparser_root=tbparser_root,
@@ -111,10 +114,13 @@ def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, s
                           refresh_predictions=refresh_predictions)
     trees = parser.parse_tweets(tweets)
     if scrub_trivia:
-        remove_trivia(trees)
-    return trees
+        trees = _scrub_trivia(trees)
+    if lemmatize:
+        trees = _lemmatize(trees)
+    return list(trees)
 
-def remove_trivia(trees):
+def _scrub_trivia(trees):
+    log_mcall()
     # Filter out nodes with HEAD = -1 from the dependency tree, except for
     # hashtags and @ mentions which provide valuable information.
     # Such nodes are direct children of the root node, so we don't need to
@@ -124,6 +130,29 @@ def remove_trivia(trees):
         tree.children[:] = [child for child in tree.children
                                   if child.data['head'] != -1 or
                                      child.data['upostag'] in NONTRIVIA_TAGS]
+    return trees
+
+def _lemmatize(trees):
+    def do_lemmatize(node):
+        assert node.data['lemma'] == '_'
+
+        form = node.data['form']
+        lemma = stem.stem(lem.lemmatize(form))
+        node.data['lemma'] = lemma
+
+        for child in node.children:
+            do_lemmatize(child)
+
+    log_mcall()
+    if not nltk.download('wordnet', quiet=True):
+        raise RuntimeError("Failed to download WordNet corpus")
+    # TODO: Decide experimentally if lemmatization or stemming (or both) performs better.
+    lem, stem = WordNetLemmatizer(), PorterStemmer()
+    for tree in trees:
+        for child in tree.children:
+            do_lemmatize(child)
+
+    return trees
 
 def add_tweet_index(X):
     log_mcall()
@@ -154,7 +183,7 @@ def main():
     y = Y['is_trace']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    for kernel in 'ptk', 'sptk', 'csptk':
+    for kernel in ['ptk',]: #'sptk', 'csptk']:
         svc = TweetSVC(trees=trees, tree_kernel=kernel)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
