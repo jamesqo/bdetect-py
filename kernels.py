@@ -26,10 +26,9 @@ class TweetKernel(object):
         return self._tree_kernel_function(treea, treeb)
 
 class PTKernel(object):
-    def __init__(self, lambda_=0.4, mu=0.4, epsilon=0.0001, normalize=True):
+    def __init__(self, lambda_=0.4, mu=0.4, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
-        self.epsilon = epsilon
         self.normalize = normalize
         self._lambda2 = lambda_ ** 2
 
@@ -42,7 +41,7 @@ class PTKernel(object):
         return k(treea, treeb) / denom
 
     def _kernel_no_normalize(self, treea, treeb):
-        result = self.epsilon # Shuts up childless trees
+        result = 0
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
             result += self._delta(a, b)
