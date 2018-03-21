@@ -14,6 +14,24 @@ def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
     return int(row[TWEET_INDEX_COL_NO])
 
+class KernelCache(object):
+    def __init__(self):
+        self._dict = {}
+
+    def _internal_key(self, key):
+        return tuple([node.data['id'] for node in key])
+
+    def __setitem__(self, key, value):
+        key = self._internal_key(key)
+        self._dict[key] = value
+
+    def clear(self):
+        self._dict.clear()
+
+    def get(self, key, default=None):
+        key = self._internal_key(key)
+        return self._dict.get(key, default)
+
 class TweetKernel(object):
     def __init__(self, trees, tree_kernel):
         self.trees = list(trees)
@@ -31,8 +49,10 @@ class PTKernel(object):
         self.mu = mu
         self.normalize = normalize
         self._lambda2 = lambda_ ** 2
+        self._cache = KernelCache()
 
     def __call__(self, treea, treeb):
+        self._cache.clear()
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -48,11 +68,17 @@ class PTKernel(object):
         return result
 
     def _delta(self, a, b):
+        key = (a, b)
+        result = self._cache.get(key)
+        if result is not None:
+            return result
+
         nca, ncb = len(a.children), len(b.children)
         if nca == 0 or ncb == 0:
             result = self.mu * self._lambda2
         else:
             result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
+        self._cache[key] = result
         return result
 
     def _sigma_delta_p(self, a, b, nca, ncb):
