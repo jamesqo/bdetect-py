@@ -29,6 +29,15 @@ TBPARSER_INPUT_FILENAME = 'tweets.txt'
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
+        '-c',
+        metavar='C',
+        help="set C hyperparameter of svm",
+        dest='c',
+        action='store',
+        type=float,
+        default=1.0
+    )
+    parser.add_argument(
         '-d', '--debug',
         help="print debug information",
         dest='log_level',
@@ -209,7 +218,7 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in ['ptk',]: #'sptk', 'csptk']:
-        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=100)
+        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
         print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
