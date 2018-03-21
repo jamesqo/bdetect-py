@@ -176,10 +176,12 @@ def print_scores(task, model, y_test, y_predict):
         print(f"{name}: {score}")
     print()
 
-def save_test_session(X_test, y_test, y_predict):
-    X_test.to_csv('test_set.log', index=False)
+def save_test_session(tweets, y_test, y_predict):
+    with open('test_set.log', 'w', encoding='utf-8') as test_set_file:
+        contents = '\n'.join(tweets)
+        test_set_file.write(contents)
     y_test.to_csv('labels.log', index=False)
-    with open('predictions.log', 'w') as predict_file:
+    with open('predictions.log', 'w', encoding='utf-8') as predict_file:
         contents = '\n'.join(map(str, y_predict))
         predict_file.write(contents)
 
@@ -198,6 +200,7 @@ def main():
                          refresh_predictions=args.refresh_predictions)
     assert len(trees) == X.shape[0]
 
+    tweets = X['text']
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 
@@ -206,11 +209,13 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in ['ptk',]: #'sptk', 'csptk']:
-        svc = TweetSVC(trees=trees, tree_kernel=kernel)
+        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=100)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
         print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
-        save_test_session(X_test=X_test, y_test=y_test, y_predict=y_predict)
+        save_test_session(tweets=[tweets[index] for index in X_test['tweet_index']],
+                          y_test=y_test,
+                          y_predict=y_predict)
 
 if __name__ == '__main__':
     start = datetime.now()
