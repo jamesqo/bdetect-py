@@ -28,12 +28,22 @@ To parse each tweet into a dependency tree so it can be fed to a tree kernel, we
 On Ubuntu you can install all of the prequisites with the following commands. Modify as appropriate if you're using a different OS.
 
 ```sh
-sudo apt-get install python3.6 build-essential autoconf m4 cmake automake perl python
+# Install Python 3.6
+# For Ubuntu 16.04 and below:
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install python3.6
+# For other Ubuntu verions:
+sudo apt-get update
+sudo apt-get install python3.6
+
+sudo apt-get install build-essential autoconf m4 cmake automake perl python
+
 # Install Java 7 or 8 (depending on your system)
 # https://stackoverflow.com/a/16263651/4077294
-# For Ubuntu 16.04 and higher
+# For Ubuntu 16.04 and higher:
 sudo apt-get install openjdk-8-jdk
-# For other Ubuntu versions
+# For other Ubuntu versions:
 sudo apt-get install openjdk-7-jdk
 ```
 
