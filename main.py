@@ -180,9 +180,9 @@ def print_scores(task, model, y_test, y_predict):
         ('f1', f1_score(y_true=y_test, y_pred=y_predict))
     ])
 
-    print(f"task {task}, model {model}")
+    print("task {}, model {}".format(task, model))
     for name, score in scores.items():
-        print(f"{name}: {score}")
+        print("{}: {}".format(name, score))
     print()
 
 def save_test_session(tweets, y_test, y_predict):
@@ -221,7 +221,7 @@ def main():
         svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
-        print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
+        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
         save_test_session(tweets=[tweets[index] for index in X_test['tweet_index']],
                           y_test=y_test,
                           y_predict=y_predict)
@@ -231,4 +231,4 @@ if __name__ == '__main__':
     main()
     end = datetime.now()
     seconds = (end - start).seconds
-    print(f"Finished running in {seconds}s", file=sys.stderr)
+    print("Finished running in {}s".format(seconds), file=sys.stderr)

@@ -30,12 +30,12 @@ class TweeboParser(object):
 
         self._tbparser_root = tbparser_root
         self._tweets_filename = tweets_filename
-        self._output_filename = f'{tweets_filename}.predict'
+        self._output_filename = '{}.predict'.format(tweets_filename)
         self._run_scripts = refresh_predictions or not os.path.isfile(self._output_filename)
 
         if self._run_scripts:
             # Run TweeboParser install script
-            exec_and_check(f'cd {tbparser_root} && bash install.sh')
+            exec_and_check('cd {} && bash install.sh'.format(tbparser_root))
 
     def parse_tweets(self, tweets):
         log_mcall()
@@ -50,7 +50,7 @@ class TweeboParser(object):
             # Run CMU's parser
             # TODO: It hangs for a long time after making the predictions because it generates 4000+
             # files (one per tweet) in working_dir/test_score. Find out how to make it stop that.
-            exec_and_check(f'cd {self._tbparser_root} && bash run.sh {self._tweets_filename}')
+            exec_and_check('cd {} && bash run.sh {}'.format(self._tbparser_root, self._tweets_filename))
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library

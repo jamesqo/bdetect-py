@@ -8,7 +8,7 @@ def _get_tree_kernel_function(name):
     if name == 'ptk':
         return PTKernel()
 
-    raise ValueError(f"Unrecognized tree kernel '{name}'")
+    raise ValueError("Unrecognized tree kernel '{}'".format(name))
 
 def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
