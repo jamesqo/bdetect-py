@@ -14,13 +14,13 @@ To parse each tweet into a dependency tree so it can be fed to a tree kernel, we
 
 **Prequisites:**
 
-- Python 3.6
+- Python 3
 - Standard build tools (i.e. make)
 - GNU Autoconf / m4
 - CMake
 - Automake (*)
 - Perl (*)
-- Python 2.x (for TweeboParser)
+- Python 2 (for TweeboParser)
 - Java 6 or greater (for POS tagger)
 
 (*) You might not really need this. Haven't tested.
@@ -28,12 +28,12 @@ To parse each tweet into a dependency tree so it can be fed to a tree kernel, we
 On Ubuntu you can install all of the prequisites with the following commands. Modify as appropriate if you're using a different OS.
 
 ```sh
-sudo apt-get install python3.6 build-essential autoconf m4 cmake automake perl python
-# Install Java 7 or 8 (depending on your system)
-# https://stackoverflow.com/a/16263651/4077294
-# For Ubuntu 16.04 and higher
+sudo apt-get install python3 build-essential autoconf m4 cmake automake perl python
+
+# Install Java 7 or 8 (depending on your system): https://stackoverflow.com/a/16263651/4077294
+# For Ubuntu 16.04 and higher:
 sudo apt-get install openjdk-8-jdk
-# For other Ubuntu versions
+# For other Ubuntu versions:
 sudo apt-get install openjdk-7-jdk
 ```
 
@@ -42,5 +42,5 @@ Once you've taken care of the steps above, run these commands:
 ```sh
 git submodule update --init --recursive
 # Type 'n' when prompted whether you have already downloaded models.
-python3.6 main.py
+python3 main.py
 ```
