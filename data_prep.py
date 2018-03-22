@@ -24,6 +24,7 @@ def load_tweets(tweets_fname, max_tweets=-1):
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
 
+    X.rename(columns={'text': 'tweet'}, inplace=True)
     X['tweet'] = X['tweet'].apply(html.unescape)
     X.sort_values('tweet', inplace=True)
     
