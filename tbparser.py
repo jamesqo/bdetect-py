@@ -1,10 +1,12 @@
 import conllu
+import nltk
 import os
 
 from collections import namedtuple, OrderedDict
 from itertools import islice
+from nltk.stem import PorterStemmer
 
-from util import exec_and_check, log_mcall
+from util import exec_and_check, log_call
 
 def _add_root(graph, tweet):
     # Turns a multi-rooted graph into a tree by adding a root node.
@@ -12,6 +14,42 @@ def _add_root(graph, tweet):
 
 def _remove_newlines(tweet):
     return tweet.replace('\n', ' ').replace('\r', ' ')
+
+def _scrub_trivia(trees):
+    log_call()
+    # Filter out nodes with HEAD = -1 from the dependency tree, except for
+    # hashtags and @ mentions which provide valuable information.
+    # Such nodes are direct children of the root node, so we don't need to
+    # exhaustively search the tree.
+    NONTRIVIA_TAGS = ['#', '@']
+    for tree in trees:
+        tree.children[:] = [child for child in tree.children
+                                  if child.data['head'] != -1 or
+                                     child.data['upostag'] in NONTRIVIA_TAGS]
+    return trees
+
+def _stem(trees):
+    log_call()
+
+    def do_stem(node):
+        assert node.data['lemma'] == '_'
+
+        form = node.data['form']
+        lemma = stem.stem(form)
+        node.data['lemma'] = lemma
+
+        for child in node.children:
+            do_stem(child)
+
+    if not nltk.download('wordnet', quiet=True):
+        raise RuntimeError("Failed to download WordNet corpus")
+
+    stem = PorterStemmer()
+    for tree in trees:
+        for child in tree.children:
+            do_stem(child)
+
+    return trees
 
 class TreeRoot(object):
     def __init__(self, children, tweet):
@@ -22,25 +60,32 @@ class TreeRoot(object):
         return self._tweet
 
 class TweeboParser(object):
-    def __init__(self, tbparser_root, tweets_filename, refresh_predictions=False):
-        log_mcall()
+    def __init__(self,
+                 tbparser_root,
+                 input_fname,
+                 refresh_predictions=False,
+                 scrub_trivia=True,
+                 stem=True):
+        log_call()
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
-        tweets_filename = os.path.join(tbparser_root, tweets_filename)
+        input_fname = os.path.join(tbparser_root, input_fname)
 
         self._tbparser_root = tbparser_root
-        self._tweets_filename = tweets_filename
-        self._output_filename = f'{tweets_filename}.predict'
-        self._run_scripts = refresh_predictions or not os.path.isfile(self._output_filename)
+        self._input_fname = input_fname
+        self._output_fname = '{}.predict'.format(input_fname)
+        self._run_scripts = refresh_predictions or not os.path.isfile(self._output_fname)
+        self._scrub_trivia = scrub_trivia
+        self._stem = stem
 
         if self._run_scripts:
             # Run TweeboParser install script
-            exec_and_check(f'cd {tbparser_root} && bash install.sh')
+            exec_and_check('cd {} && bash install.sh'.format(tbparser_root))
 
     def parse_tweets(self, tweets):
-        log_mcall()
+        log_call()
         if self._run_scripts:
-            with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
+            with open(self._input_fname, 'w', encoding='utf-8') as tweets_file:
                 # Twitter permits newlines in tweets, causing problems with the dependency parser
                 # which expects one tweet per line in the input file.
                 tweets = [_remove_newlines(tweet) for tweet in tweets]
@@ -50,14 +95,18 @@ class TweeboParser(object):
             # Run CMU's parser
             # TODO: It hangs for a long time after making the predictions because it generates 4000+
             # files (one per tweet) in working_dir/test_score. Find out how to make it stop that.
-            exec_and_check(f'cd {self._tbparser_root} && bash run.sh {self._tweets_filename}')
+            exec_and_check('cd {} && bash run.sh {}'.format(self._tbparser_root, self._input_fname))
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
-        with open(self._output_filename, 'r', encoding='utf-8') as output_file:
+        with open(self._output_fname, 'r', encoding='utf-8') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
         batches = islice(batches, len(tweets))
         graphs = map(conllu.parse_tree, batches)
         trees = [_add_root(graph, tweet) for graph, tweet in zip(graphs, tweets)]
-        return trees
+        if self._scrub_trivia:
+            trees = _scrub_trivia(trees)
+        if self._stem:
+            trees = _stem(trees)
+        return list(trees)

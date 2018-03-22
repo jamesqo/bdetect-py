@@ -1,6 +1,7 @@
-conllu
+conllu>=0.8
+nltk
 numpy
-pandas
+pandas>=0.22
 simplejson
 scipy
 sklearn

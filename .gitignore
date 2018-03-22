@@ -188,4 +188,7 @@ tags
 
 # End of https://www.gitignore.io/api/vim,emacs,visualstudiocode,python
 
+*.csv
+!data/**/*.csv
+*.log
 twitter_creds.txt

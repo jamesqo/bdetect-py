@@ -1,33 +1,42 @@
-import html
 import logging as log
-import nltk
 import os
-import pandas as pd
-import simplejson as json
 import sys
 
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
-from multiprocessing import Pool
-from nltk.stem.porter import PorterStemmer
-from pandas.io.json import json_normalize
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
+from data_prep import add_tweet_index, load_tweets, load_tweet_labels
 from svm import TweetSVC
 from tbparser import TweeboParser
-from util import log_mcall
+from util import log_call
 
 TWEETS_ROOT = os.path.join('data', 'bullyingV3')
-TWEETS_FILENAME = os.path.join(TWEETS_ROOT, 'tweet.json')
-LABELS_FILENAME = os.path.join(TWEETS_ROOT, 'data.csv')
+TWEETS_FNAME = os.path.join(TWEETS_ROOT, 'tweet.json')
+LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
-TBPARSER_INPUT_FILENAME = 'tweets.txt'
+TBPARSER_INPUT_FNAME = 'tweets.txt'
+
+FIT_SAVEPATH = 'kernels.fit.csv'
+PREDICT_SAVEPATH = 'kernels.predict.csv'
+TEST_SET_SAVEPATH = 'test_set.log'
+LABELS_SAVEPATH = 'labels.log'
+PREDICTIONS_SAVEPATH = 'predictions.log'
 
 def parse_args():
     parser = ArgumentParser()
+    parser.add_argument(
+        '-c',
+        metavar='C',
+        help="set C hyperparameter of svm",
+        dest='c',
+        action='store',
+        type=float,
+        default=1.0
+    )
     parser.add_argument(
         '-d', '--debug',
         help="print debug information",
@@ -62,107 +71,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-def load_tweets(max_tweets=-1):
-    log_mcall()
-    with open(TWEETS_FILENAME, encoding='utf-8') as tweets_file:
-        tweets = json.load(tweets_file)
-    
-    for tweet in tweets:
-        if 'entities' in tweet:
-            del tweet['entities']
-        if 'user' in tweet:
-            del tweet['user']
-
-    X = json_normalize(tweets)
-
-    X.drop('id', axis=1, inplace=True)
-    X.rename(columns={'id_str': 'id'}, inplace=True)
-    X.drop_duplicates('id', inplace=True)
-    X.set_index('id', inplace=True)
-
-    X['text'] = X['text'].apply(html.unescape)
-    X.sort_values('text', inplace=True)
-    
-    if max_tweets != -1:
-        X = X.head(n=max_tweets)
-
-    return X[['text']]
-
-def load_tweet_labels(X):
-    log_mcall()
-    Y = pd.read_csv(LABELS_FILENAME,
-                    names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
-                    dtype={'id': object, 'user_id': object})
-    Y.drop_duplicates('id', inplace=True)
-    Y.set_index('id', inplace=True)
-    Y['is_trace'] = Y['is_trace'] == 'y'
-
-    # Drop labels for entries that are missing in X
-    # (X and Y may not have the same number of rows as Twitter has removed some tweets)
-    X['tweet_absent'] = False
-    X_Y = pd.concat([X, Y], axis=1)
-    X.drop('tweet_absent', axis=1, inplace=True)
-    X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
-
-    Y = X_Y.drop(columns=X.columns.values)
-    return Y[['is_trace']]
-
-def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
-    log_mcall()
-    tweets = sorted(X['text'])
-    parser = TweeboParser(tbparser_root=tbparser_root,
-                          tweets_filename=tweets_filename,
-                          refresh_predictions=refresh_predictions)
-    trees = parser.parse_tweets(tweets)
-    if scrub_trivia:
-        trees = _scrub_trivia(trees)
-    if lemmatize:
-        trees = _lemmatize(trees)
-    return list(trees)
-
-def _scrub_trivia(trees):
-    log_mcall()
-    # Filter out nodes with HEAD = -1 from the dependency tree, except for
-    # hashtags and @ mentions which provide valuable information.
-    # Such nodes are direct children of the root node, so we don't need to
-    # exhaustively search the tree.
-    NONTRIVIA_TAGS = ('#', '@')
-    for tree in trees:
-        tree.children[:] = [child for child in tree.children
-                                  if child.data['head'] != -1 or
-                                     child.data['upostag'] in NONTRIVIA_TAGS]
-    return trees
-
-def _lemmatize(trees):
-    def do_lemmatize(node):
-        assert node.data['lemma'] == '_'
-
-        form = node.data['form']
-        lemma = stem.stem(form)
-        node.data['lemma'] = lemma
-
-        for child in node.children:
-            do_lemmatize(child)
-
-    log_mcall()
-    if not nltk.download('wordnet', quiet=True):
-        raise RuntimeError("Failed to download WordNet corpus")
-
-    # TODO: Decide experimentally if lemmatization or stemming performs better.
-    stem = PorterStemmer()
-    for tree in trees:
-        for child in tree.children:
-            do_lemmatize(child)
-
-    return trees
-
-def add_tweet_index(X):
-    log_mcall()
-    tweets = sorted(X['text'])
-    index_map = {tweet: index for index, tweet in enumerate(tweets)}
-    X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
-    return X
-
 def print_scores(task, model, y_test, y_predict):
     scores = OrderedDict([
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
@@ -171,42 +79,55 @@ def print_scores(task, model, y_test, y_predict):
         ('f1', f1_score(y_true=y_test, y_pred=y_predict))
     ])
 
-    print(f"task {task}, model {model}")
+    print("task {}, model {}".format(task, model))
     for name, score in scores.items():
-        print(f"{name}: {score}")
+        print("{}: {}".format(name, score))
     print()
+
+def save_test_session(tweets_test, y_test, y_predict):
+    with open(TEST_SET_SAVEPATH, 'w', encoding='utf-8') as test_set_file:
+        contents = '\n'.join(tweets_test) + '\n'
+        test_set_file.write(contents)
+    y_test.to_csv(LABELS_SAVEPATH, index=False)
+    with open(PREDICTIONS_SAVEPATH, 'w', encoding='utf-8') as predict_file:
+        contents = '\n'.join(map(str, y_predict)) + '\n'
+        predict_file.write(contents)
 
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
 
-    X = load_tweets(max_tweets=args.max_tweets)
-    Y = load_tweet_labels(X)
+    X = load_tweets(TWEETS_FNAME, max_tweets=args.max_tweets)
+    Y = load_tweet_labels(LABELS_FNAME, X)
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
-    trees = parse_tweets(X,
-                         tbparser_root=TBPARSER_ROOT,
-                         tweets_filename=TBPARSER_INPUT_FILENAME,
-                         refresh_predictions=args.refresh_predictions)
+    tweets = sorted(X['tweet'])
+    parser = TweeboParser(tbparser_root=TBPARSER_ROOT,
+                          input_fname=TBPARSER_INPUT_FNAME,
+                          refresh_predictions=args.refresh_predictions)
+    trees = parser.parse_tweets(tweets)
     assert len(trees) == X.shape[0]
 
     X = add_tweet_index(X)
-    X.drop('text', axis=1, inplace=True)
+    X.drop(columns=['tweet'], inplace=True)
 
     # NLP Task A: Bullying trace classification
     y = Y['is_trace']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    for kernel in ['ptk',]: #'sptk', 'csptk']:
-        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=100)
-        svc.fit(X_train, y_train, n_jobs=args.n_jobs)
-        y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
-        print_scores(task='a', model=f'svm+{kernel}', y_test=y_test, y_predict=y_predict)
+    for kernel in ['ptk']: # 'sptk', 'csptk'
+        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
+        svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
+        y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
+        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
+
+        tweets_test = [tweets[index] for index in X_test['tweet_index']]
+        save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
 
 if __name__ == '__main__':
     start = datetime.now()
     main()
     end = datetime.now()
     seconds = (end - start).seconds
-    print(f"Finished running in {seconds}s", file=sys.stderr)
+    print("Finished running in {}s".format(seconds), file=sys.stderr)

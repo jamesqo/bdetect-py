@@ -8,11 +8,30 @@ def _get_tree_kernel_function(name):
     if name == 'ptk':
         return PTKernel()
 
-    raise ValueError(f"Unrecognized tree kernel '{name}'")
+    raise ValueError("Unrecognized tree kernel '{}'".format(name))
 
 def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
     return int(row[TWEET_INDEX_COL_NO])
+
+class DeltaCache(object):
+    def __init__(self):
+        self._dict = {}
+
+    def _internal_key(self, key):
+        n1, n2 = key
+        return n1.data['id'], n2.data['id']
+
+    def __setitem__(self, key, value):
+        key = self._internal_key(key)
+        self._dict[key] = value
+
+    def clear(self):
+        self._dict.clear()
+
+    def get(self, key, default=None):
+        key = self._internal_key(key)
+        return self._dict.get(key, default)
 
 class TweetKernel(object):
     def __init__(self, trees, tree_kernel):
@@ -26,14 +45,15 @@ class TweetKernel(object):
         return self._tree_kernel_function(treea, treeb)
 
 class PTKernel(object):
-    def __init__(self, lambda_=0.4, mu=0.4, epsilon=0.0001, normalize=True):
+    def __init__(self, lambda_=0.4, mu=0.4, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
-        self.epsilon = epsilon
         self.normalize = normalize
         self._lambda2 = lambda_ ** 2
+        self._delta_cache = DeltaCache()
 
     def __call__(self, treea, treeb):
+        self._delta_cache.clear()
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -42,18 +62,24 @@ class PTKernel(object):
         return k(treea, treeb) / denom
 
     def _kernel_no_normalize(self, treea, treeb):
-        result = self.epsilon # Shuts up childless trees
+        result = 0
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
             result += self._delta(a, b)
         return result
 
     def _delta(self, a, b):
+        key = (a, b)
+        result = self._delta_cache.get(key)
+        if result is not None:
+            return result
+
         nca, ncb = len(a.children), len(b.children)
         if nca == 0 or ncb == 0:
             result = self.mu * self._lambda2
         else:
             result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
+        self._delta_cache[key] = result
         return result
 
     def _sigma_delta_p(self, a, b, nca, ncb):
