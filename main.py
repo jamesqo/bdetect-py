@@ -8,7 +8,7 @@ from datetime import datetime
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
-from data_loader import add_tweet_index, load_tweets, load_tweet_labels
+from data_prep import add_tweet_index, load_tweets, load_tweet_labels
 from svm import TweetSVC
 from tbparser import TweeboParser
 from util import log_call
@@ -96,7 +96,7 @@ def main():
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
-    tweets = sorted(X['text'])
+    tweets = sorted(X['tweet'])
     parser = TweeboParser(tbparser_root=TBPARSER_ROOT,
                           input_fname=TBPARSER_INPUT_FNAME,
                           refresh_predictions=args.refresh_predictions)
@@ -104,13 +104,13 @@ def main():
     assert len(trees) == X.shape[0]
 
     X = add_tweet_index(X)
-    X.drop('text', axis=1, inplace=True)
+    X.drop('tweet', axis=1, inplace=True)
 
     # NLP Task A: Bullying trace classification
     y = Y['is_trace']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    for kernel in ['ptk',]: #'sptk', 'csptk']:
+    for kernel in ['ptk']: # 'sptk', 'csptk'
         svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)

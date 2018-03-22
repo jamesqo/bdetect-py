@@ -24,13 +24,13 @@ def load_tweets(tweets_fname, max_tweets=-1):
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
 
-    X['text'] = X['text'].apply(html.unescape)
-    X.sort_values('text', inplace=True)
+    X['tweet'] = X['tweet'].apply(html.unescape)
+    X.sort_values('tweet', inplace=True)
     
     if max_tweets != -1:
         X = X.head(n=max_tweets)
 
-    return X[['text']]
+    return X[['tweet']]
 
 def load_tweet_labels(labels_fname, X):
     log_call()
@@ -53,7 +53,7 @@ def load_tweet_labels(labels_fname, X):
 
 def add_tweet_index(X):
     log_call()
-    tweets = sorted(X['text'])
+    tweets = sorted(X['tweet'])
     index_map = {tweet: index for index, tweet in enumerate(tweets)}
-    X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
+    X['tweet_index'] = X['tweet'].apply(lambda tweet: index_map[tweet])
     return X
