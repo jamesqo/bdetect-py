@@ -1,20 +1,17 @@
-import html
 import logging as log
 import nltk
 import os
 import pandas as pd
-import simplejson as json
 import sys
 
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
-from multiprocessing import Pool
-from nltk.stem.porter import PorterStemmer
-from pandas.io.json import json_normalize
+from nltk.stem import PorterStemmer
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
+from data_loader import add_tweet_index, load_tweets, load_tweet_labels
 from svm import TweetSVC
 from tbparser import TweeboParser
 from util import log_mcall
@@ -71,51 +68,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-def load_tweets(max_tweets=-1):
-    log_mcall()
-    with open(TWEETS_FNAME, encoding='utf-8') as tweets_file:
-        tweets = json.load(tweets_file)
-    
-    for tweet in tweets:
-        if 'entities' in tweet:
-            del tweet['entities']
-        if 'user' in tweet:
-            del tweet['user']
-
-    X = json_normalize(tweets)
-
-    X.drop('id', axis=1, inplace=True)
-    X.rename(columns={'id_str': 'id'}, inplace=True)
-    X.drop_duplicates('id', inplace=True)
-    X.set_index('id', inplace=True)
-
-    X['text'] = X['text'].apply(html.unescape)
-    X.sort_values('text', inplace=True)
-    
-    if max_tweets != -1:
-        X = X.head(n=max_tweets)
-
-    return X[['text']]
-
-def load_tweet_labels(X):
-    log_mcall()
-    Y = pd.read_csv(LABELS_FNAME,
-                    names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
-                    dtype={'id': object, 'user_id': object})
-    Y.drop_duplicates('id', inplace=True)
-    Y.set_index('id', inplace=True)
-    Y['is_trace'] = Y['is_trace'] == 'y'
-
-    # Drop labels for entries that are missing in X
-    # (X and Y may not have the same number of rows as Twitter has removed some tweets)
-    X['tweet_absent'] = False
-    X_Y = pd.concat([X, Y], axis=1)
-    X.drop('tweet_absent', axis=1, inplace=True)
-    X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
-
-    Y = X_Y.drop(columns=X.columns.values)
-    return Y[['is_trace']]
-
 def parse_tweets(X, tbparser_root, tweets_fname, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
     log_mcall()
     tweets = sorted(X['text'])
@@ -165,13 +117,6 @@ def _lemmatize(trees):
 
     return trees
 
-def add_tweet_index(X):
-    log_mcall()
-    tweets = sorted(X['text'])
-    index_map = {tweet: index for index, tweet in enumerate(tweets)}
-    X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
-    return X
-
 def print_scores(task, model, y_test, y_predict):
     scores = OrderedDict([
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
@@ -198,8 +143,8 @@ def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
 
-    X = load_tweets(max_tweets=args.max_tweets)
-    Y = load_tweet_labels(X)
+    X = load_tweets(tweets_fname=TWEETS_FNAME, max_tweets=args.max_tweets)
+    Y = load_tweet_labels(labels_fname=LABELS_FNAME, X=X)
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
