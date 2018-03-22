@@ -104,7 +104,7 @@ def main():
     assert len(trees) == X.shape[0]
 
     X = add_tweet_index(X)
-    X.drop('tweet', axis=1, inplace=True)
+    X.drop(columns=['tweet'], inplace=True)
 
     # NLP Task A: Bullying trace classification
     y = Y['is_trace']

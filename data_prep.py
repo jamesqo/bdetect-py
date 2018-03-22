@@ -19,7 +19,7 @@ def load_tweets(tweets_fname, max_tweets=-1):
 
     X = json_normalize(tweets)
 
-    X.drop('id', axis=1, inplace=True)
+    X.drop(columns=['id'], inplace=True)
     X.rename(columns={'id_str': 'id'}, inplace=True)
     X.drop_duplicates('id', inplace=True)
     X.set_index('id', inplace=True)
@@ -45,8 +45,8 @@ def load_tweet_labels(labels_fname, X):
     # (X and Y may not have the same number of rows as Twitter has removed some tweets)
     X['tweet_absent'] = False
     X_Y = pd.concat([X, Y], axis=1)
-    X.drop('tweet_absent', axis=1, inplace=True)
-    X_Y.drop(X_Y.index[X_Y['tweet_absent'].isna()], axis=0, inplace=True)
+    X.drop(columns=['tweet_absent'], inplace=True)
+    X_Y.drop(index=X_Y.index[X_Y['tweet_absent'].isna()], inplace=True)
 
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
