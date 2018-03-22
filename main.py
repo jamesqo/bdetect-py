@@ -20,8 +20,11 @@ LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FNAME = 'tweets.txt'
 
-FIT_SAVEPATH = 'kernels.fit.log'
-PREDICT_SAVEPATH = 'kernels.predict.log'
+FIT_SAVEPATH = 'kernels.fit.csv'
+PREDICT_SAVEPATH = 'kernels.predict.csv'
+TEST_SET_SAVEPATH = 'test_set.log'
+LABELS_SAVEPATH = 'labels.log'
+PREDICTIONS_SAVEPATH = 'predictions.log'
 
 def parse_args():
     parser = ArgumentParser()
@@ -82,11 +85,11 @@ def print_scores(task, model, y_test, y_predict):
     print()
 
 def save_test_session(tweets_test, y_test, y_predict):
-    with open('test_set.log', 'w', encoding='utf-8') as test_set_file:
+    with open(TEST_SET_SAVEPATH, 'w', encoding='utf-8') as test_set_file:
         contents = '\n'.join(tweets_test) + '\n'
         test_set_file.write(contents)
-    y_test.to_csv('labels.log', index=False)
-    with open('predictions.log', 'w', encoding='utf-8') as predict_file:
+    y_test.to_csv(LABELS_SAVEPATH, index=False)
+    with open(PREDICTIONS_SAVEPATH, 'w', encoding='utf-8') as predict_file:
         contents = '\n'.join(map(str, y_predict)) + '\n'
         predict_file.write(contents)
 
