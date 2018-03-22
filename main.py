@@ -117,7 +117,7 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in ['ptk']: # 'sptk', 'csptk'
-        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
+        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c, class_weight='balanced')
         svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
