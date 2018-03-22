@@ -20,11 +20,11 @@ from tbparser import TweeboParser
 from util import log_mcall
 
 TWEETS_ROOT = os.path.join('data', 'bullyingV3')
-TWEETS_FILENAME = os.path.join(TWEETS_ROOT, 'tweet.json')
-LABELS_FILENAME = os.path.join(TWEETS_ROOT, 'data.csv')
+TWEETS_FNAME = os.path.join(TWEETS_ROOT, 'tweet.json')
+LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
-TBPARSER_INPUT_FILENAME = 'tweets.txt'
+TBPARSER_INPUT_FNAME = 'tweets.txt'
 
 def parse_args():
     parser = ArgumentParser()
@@ -73,7 +73,7 @@ def parse_args():
 
 def load_tweets(max_tweets=-1):
     log_mcall()
-    with open(TWEETS_FILENAME, encoding='utf-8') as tweets_file:
+    with open(TWEETS_FNAME, encoding='utf-8') as tweets_file:
         tweets = json.load(tweets_file)
     
     for tweet in tweets:
@@ -99,7 +99,7 @@ def load_tweets(max_tweets=-1):
 
 def load_tweet_labels(X):
     log_mcall()
-    Y = pd.read_csv(LABELS_FILENAME,
+    Y = pd.read_csv(LABELS_FNAME,
                     names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
                     dtype={'id': object, 'user_id': object})
     Y.drop_duplicates('id', inplace=True)
@@ -116,11 +116,11 @@ def load_tweet_labels(X):
     Y = X_Y.drop(columns=X.columns.values)
     return Y[['is_trace']]
 
-def parse_tweets(X, tbparser_root, tweets_filename, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
+def parse_tweets(X, tbparser_root, tweets_fname, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
     log_mcall()
     tweets = sorted(X['text'])
     parser = TweeboParser(tbparser_root=tbparser_root,
-                          tweets_filename=tweets_filename,
+                          tweets_fname=tweets_fname,
                           refresh_predictions=refresh_predictions)
     trees = parser.parse_tweets(tweets)
     if scrub_trivia:
@@ -205,7 +205,7 @@ def main():
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
     trees = parse_tweets(X,
                          tbparser_root=TBPARSER_ROOT,
-                         tweets_filename=TBPARSER_INPUT_FILENAME,
+                         tweets_fname=TBPARSER_INPUT_FNAME,
                          refresh_predictions=args.refresh_predictions)
     assert len(trees) == X.shape[0]
 

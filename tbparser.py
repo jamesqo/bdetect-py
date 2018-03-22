@@ -22,16 +22,16 @@ class TreeRoot(object):
         return self._tweet
 
 class TweeboParser(object):
-    def __init__(self, tbparser_root, tweets_filename, refresh_predictions=False):
+    def __init__(self, tbparser_root, tweets_fname, refresh_predictions=False):
         log_mcall()
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
-        tweets_filename = os.path.join(tbparser_root, tweets_filename)
+        tweets_fname = os.path.join(tbparser_root, tweets_fname)
 
         self._tbparser_root = tbparser_root
-        self._tweets_filename = tweets_filename
-        self._output_filename = '{}.predict'.format(tweets_filename)
-        self._run_scripts = refresh_predictions or not os.path.isfile(self._output_filename)
+        self._tweets_fname = tweets_fname
+        self._output_fname = '{}.predict'.format(tweets_fname)
+        self._run_scripts = refresh_predictions or not os.path.isfile(self._output_fname)
 
         if self._run_scripts:
             # Run TweeboParser install script
@@ -40,7 +40,7 @@ class TweeboParser(object):
     def parse_tweets(self, tweets):
         log_mcall()
         if self._run_scripts:
-            with open(self._tweets_filename, 'w', encoding='utf-8') as tweets_file:
+            with open(self._tweets_fname, 'w', encoding='utf-8') as tweets_file:
                 # Twitter permits newlines in tweets, causing problems with the dependency parser
                 # which expects one tweet per line in the input file.
                 tweets = [_remove_newlines(tweet) for tweet in tweets]
@@ -50,11 +50,11 @@ class TweeboParser(object):
             # Run CMU's parser
             # TODO: It hangs for a long time after making the predictions because it generates 4000+
             # files (one per tweet) in working_dir/test_score. Find out how to make it stop that.
-            exec_and_check('cd {} && bash run.sh {}'.format(self._tbparser_root, self._tweets_filename))
+            exec_and_check('cd {} && bash run.sh {}'.format(self._tbparser_root, self._tweets_fname))
 
         # Parse output file, which is formatted in CoNLL-X
         # Since it doesn't use the PHEAD or PDEPREL fields, we can use a CoNLL-U parser library
-        with open(self._output_filename, 'r', encoding='utf-8') as output_file:
+        with open(self._output_fname, 'r', encoding='utf-8') as output_file:
             contents = output_file.read().strip()
         batches = contents.split('\n\n')
         batches = islice(batches, len(tweets))
