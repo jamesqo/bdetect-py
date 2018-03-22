@@ -44,6 +44,7 @@ class PTKernel(object):
         self._delta_cache.clear()
 
         treea, treeb = self.trees[indexa], self.trees[indexb]
+        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -55,8 +56,10 @@ class PTKernel(object):
 
     def _compute_sqrt_ks(self, trees):
         result = []
+        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
         k = self._kernel_no_normalize
         for tree in trees:
+            self._delta_cache.clear()
             sqrt_k = np.sqrt(k(tree, tree))
             result.append(sqrt_k)
         return result
