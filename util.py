@@ -8,6 +8,6 @@ def exec_and_check(cmd):
      if exit_code != 0:
          raise RuntimeError("'{}' failed with exit code {}".format(cmd, exit_code))
 
-def log_mcall(level=log.DEBUG):
+def log_call(level=log.DEBUG):
     method = stack()[1].function
     log.log(level, "%s() called", method)

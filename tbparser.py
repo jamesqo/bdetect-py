@@ -4,7 +4,7 @@ import os
 from collections import namedtuple, OrderedDict
 from itertools import islice
 
-from util import exec_and_check, log_mcall
+from util import exec_and_check, log_call
 
 def _add_root(graph, tweet):
     # Turns a multi-rooted graph into a tree by adding a root node.
@@ -23,7 +23,7 @@ class TreeRoot(object):
 
 class TweeboParser(object):
     def __init__(self, tbparser_root, tweets_fname, refresh_predictions=False):
-        log_mcall()
+        log_call()
         tbparser_root = tbparser_root.rstrip('/')
         tbparser_root = os.path.abspath(tbparser_root)
         tweets_fname = os.path.join(tbparser_root, tweets_fname)
@@ -38,7 +38,7 @@ class TweeboParser(object):
             exec_and_check('cd {} && bash install.sh'.format(tbparser_root))
 
     def parse_tweets(self, tweets):
-        log_mcall()
+        log_call()
         if self._run_scripts:
             with open(self._tweets_fname, 'w', encoding='utf-8') as tweets_file:
                 # Twitter permits newlines in tweets, causing problems with the dependency parser

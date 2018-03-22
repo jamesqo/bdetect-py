@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from data_loader import add_tweet_index, load_tweets, load_tweet_labels
 from svm import TweetSVC
 from tbparser import TweeboParser
-from util import log_mcall
+from util import log_call
 
 TWEETS_ROOT = os.path.join('data', 'bullyingV3')
 TWEETS_FNAME = os.path.join(TWEETS_ROOT, 'tweet.json')
@@ -69,7 +69,7 @@ def parse_args():
     return parser.parse_args()
 
 def parse_tweets(X, tbparser_root, tweets_fname, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
-    log_mcall()
+    log_call()
     tweets = sorted(X['text'])
     parser = TweeboParser(tbparser_root=tbparser_root,
                           tweets_fname=tweets_fname,
@@ -82,7 +82,7 @@ def parse_tweets(X, tbparser_root, tweets_fname, refresh_predictions=False, scru
     return list(trees)
 
 def _scrub_trivia(trees):
-    log_mcall()
+    log_call()
     # Filter out nodes with HEAD = -1 from the dependency tree, except for
     # hashtags and @ mentions which provide valuable information.
     # Such nodes are direct children of the root node, so we don't need to
@@ -105,7 +105,7 @@ def _lemmatize(trees):
         for child in node.children:
             do_lemmatize(child)
 
-    log_mcall()
+    log_call()
     if not nltk.download('wordnet', quiet=True):
         raise RuntimeError("Failed to download WordNet corpus")
 

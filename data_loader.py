@@ -4,10 +4,10 @@ import simplejson as json
 
 from pandas.io.json import json_normalize
 
-from util import log_mcall
+from util import log_call
 
 def load_tweets(tweets_fname, max_tweets=-1):
-    log_mcall()
+    log_call()
     with open(tweets_fname, encoding='utf-8') as tweets_file:
         tweets = json.load(tweets_file)
     
@@ -33,7 +33,7 @@ def load_tweets(tweets_fname, max_tweets=-1):
     return X[['text']]
 
 def load_tweet_labels(labels_fname, X):
-    log_mcall()
+    log_call()
     Y = pd.read_csv(labels_fname,
                     names=['id', 'user_id', 'is_trace', 'type', 'form', 'teasing', 'author_role', 'emotion'],
                     dtype={'id': object, 'user_id': object})
@@ -52,7 +52,7 @@ def load_tweet_labels(labels_fname, X):
     return Y[['is_trace']]
 
 def add_tweet_index(X):
-    log_mcall()
+    log_call()
     tweets = sorted(X['text'])
     index_map = {tweet: index for index, tweet in enumerate(tweets)}
     X['tweet_index'] = X['text'].apply(lambda tweet: index_map[tweet])
