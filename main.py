@@ -1,13 +1,10 @@
 import logging as log
-import nltk
 import os
-import pandas as pd
 import sys
 
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
-from nltk.stem import PorterStemmer
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
@@ -68,55 +65,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-def parse_tweets(X, tbparser_root, tweets_fname, refresh_predictions=False, scrub_trivia=True, lemmatize=True):
-    log_call()
-    tweets = sorted(X['text'])
-    parser = TweeboParser(tbparser_root=tbparser_root,
-                          tweets_fname=tweets_fname,
-                          refresh_predictions=refresh_predictions)
-    trees = parser.parse_tweets(tweets)
-    if scrub_trivia:
-        trees = _scrub_trivia(trees)
-    if lemmatize:
-        trees = _lemmatize(trees)
-    return list(trees)
-
-def _scrub_trivia(trees):
-    log_call()
-    # Filter out nodes with HEAD = -1 from the dependency tree, except for
-    # hashtags and @ mentions which provide valuable information.
-    # Such nodes are direct children of the root node, so we don't need to
-    # exhaustively search the tree.
-    NONTRIVIA_TAGS = ['#', '@']
-    for tree in trees:
-        tree.children[:] = [child for child in tree.children
-                                  if child.data['head'] != -1 or
-                                     child.data['upostag'] in NONTRIVIA_TAGS]
-    return trees
-
-def _lemmatize(trees):
-    def do_lemmatize(node):
-        assert node.data['lemma'] == '_'
-
-        form = node.data['form']
-        lemma = stem.stem(form)
-        node.data['lemma'] = lemma
-
-        for child in node.children:
-            do_lemmatize(child)
-
-    log_call()
-    if not nltk.download('wordnet', quiet=True):
-        raise RuntimeError("Failed to download WordNet corpus")
-
-    # TODO: Decide experimentally if lemmatization or stemming (or both) performs better.
-    stem = PorterStemmer()
-    for tree in trees:
-        for child in tree.children:
-            do_lemmatize(child)
-
-    return trees
-
 def print_scores(task, model, y_test, y_predict):
     scores = OrderedDict([
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
@@ -143,18 +91,18 @@ def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
 
-    X = load_tweets(tweets_fname=TWEETS_FNAME, max_tweets=args.max_tweets)
-    Y = load_tweet_labels(labels_fname=LABELS_FNAME, X=X)
+    X = load_tweets(TWEETS_FNAME, max_tweets=args.max_tweets)
+    Y = load_tweet_labels(LABELS_FNAME, X)
     assert X.shape[0] == Y.shape[0]
 
     # Use CMU's TweeboParser to produce a dependency tree for each tweet.
-    trees = parse_tweets(X,
-                         tbparser_root=TBPARSER_ROOT,
-                         tweets_fname=TBPARSER_INPUT_FNAME,
-                         refresh_predictions=args.refresh_predictions)
+    tweets = sorted(X['text'])
+    parser = TweeboParser(tbparser_root=TBPARSER_ROOT,
+                          input_fname=TBPARSER_INPUT_FNAME,
+                          refresh_predictions=args.refresh_predictions)
+    trees = parser.parse_tweets(tweets)
     assert len(trees) == X.shape[0]
 
-    tweets = X['text']
     X = add_tweet_index(X)
     X.drop('text', axis=1, inplace=True)
 
