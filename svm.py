@@ -11,7 +11,7 @@ class TweetSVC(object):
         self._kernel = TweetKernel(trees, tree_kernel)
         self._svc = SVC(kernel='precomputed', *args, **kwargs)
 
-    def fit(self, X, y, savepath=None, n_jobs=-1):
+    def fit(self, X, y, n_jobs=-1, savepath=None):
         log_call()
         self._X = X
         self.kernel_matrix_ = pairwise_kernels(X, self._X, metric=self._kernel, n_jobs=n_jobs)
@@ -20,7 +20,7 @@ class TweetSVC(object):
         self._svc.fit(self.kernel_matrix_, y)
         return self
 
-    def predict(self, X, savepath=None, n_jobs=-1):
+    def predict(self, X, n_jobs=-1, savepath=None):
         log_call()
         kernel_matrix = pairwise_kernels(X, self._X, metric=self._kernel, n_jobs=n_jobs)
         if savepath is not None:
