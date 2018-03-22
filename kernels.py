@@ -48,8 +48,10 @@ class PTKernel(object):
     def __init__(self, lambda_=0.4, mu=0.4, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
-        self.normalize = normalize
         self._lambda2 = lambda_ ** 2
+        self._mu_lambda2 = mu * self._lambda2
+
+        self.normalize = normalize
         self._delta_cache = DeltaCache()
 
     def __call__(self, treea, treeb):
@@ -75,10 +77,9 @@ class PTKernel(object):
             return result
 
         nca, ncb = len(a.children), len(b.children)
-        if nca == 0 or ncb == 0:
-            result = self.mu * self._lambda2
-        else:
-            result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
+        result = self._mu_lambda2
+        if nca != 0 and ncb != 0:
+            result += (self.mu * self._sigma_delta_p(a, b, nca, ncb))
         self._delta_cache[key] = result
         return result
 
