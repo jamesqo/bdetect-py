@@ -19,7 +19,8 @@ class DeltaCache(object):
         self._dict = {}
 
     def _internal_key(self, key):
-        return tuple([node.data['id'] for node in key])
+        n1, n2 = key
+        return n1.data['id'], n2.data['id']
 
     def __setitem__(self, key, value):
         key = self._internal_key(key)
@@ -49,10 +50,10 @@ class PTKernel(object):
         self.mu = mu
         self.normalize = normalize
         self._lambda2 = lambda_ ** 2
-        self._cache = DeltaCache()
+        self._delta_cache = DeltaCache()
 
     def __call__(self, treea, treeb):
-        self._cache.clear()
+        self._delta_cache.clear()
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -69,7 +70,7 @@ class PTKernel(object):
 
     def _delta(self, a, b):
         key = (a, b)
-        result = self._cache.get(key)
+        result = self._delta_cache.get(key)
         if result is not None:
             return result
 
@@ -78,7 +79,7 @@ class PTKernel(object):
             result = self.mu * self._lambda2
         else:
             result = self.mu * (self._lambda2 + self._sigma_delta_p(a, b, nca, ncb))
-        self._cache[key] = result
+        self._delta_cache[key] = result
         return result
 
     def _sigma_delta_p(self, a, b, nca, ncb):

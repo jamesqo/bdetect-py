@@ -190,6 +190,5 @@ tags
 
 *.csv
 !data/**/*.csv
-
 *.log
 twitter_creds.txt
