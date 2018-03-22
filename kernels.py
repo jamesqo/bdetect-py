@@ -4,6 +4,8 @@ import sys
 
 import treenode as tn
 
+from collections import defaultdict
+
 def _get_tree_kernel_function(name):
     if name == 'ptk':
         return PTKernel()
@@ -14,24 +16,8 @@ def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
     return int(row[TWEET_INDEX_COL_NO])
 
-class DeltaCache(object):
-    def __init__(self):
-        self._dict = {}
-
-    def _internal_key(self, key):
-        n1, n2 = key
-        return n1.data['id'], n2.data['id']
-
-    def __setitem__(self, key, value):
-        key = self._internal_key(key)
-        self._dict[key] = value
-
-    def clear(self):
-        self._dict.clear()
-
-    def get(self, key, default=None):
-        key = self._internal_key(key)
-        return self._dict.get(key, default)
+def _get_delta_cache_key(n1, n2):
+    return n1.data['id'], n2.data['id']
 
 class TweetKernel(object):
     def __init__(self, trees, tree_kernel):
@@ -52,7 +38,7 @@ class PTKernel(object):
         self._mu_lambda2 = mu * self._lambda2
 
         self.normalize = normalize
-        self._delta_cache = DeltaCache()
+        self._delta_cache = defaultdict()
 
     def __call__(self, treea, treeb):
         self._delta_cache.clear()
@@ -71,8 +57,8 @@ class PTKernel(object):
         return result
 
     def _delta(self, a, b):
-        key = (a, b)
-        result = self._delta_cache.get(key)
+        key = _get_delta_cache_key(a, b)
+        result = self._delta_cache[key]
         if result is not None:
             return result
 
@@ -80,6 +66,7 @@ class PTKernel(object):
         result = self._mu_lambda2
         if nca != 0 and ncb != 0:
             result += (self.mu * self._sigma_delta_p(a, b, nca, ncb))
+
         self._delta_cache[key] = result
         return result
 
