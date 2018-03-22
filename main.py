@@ -185,9 +185,9 @@ def print_scores(task, model, y_test, y_predict):
         print("{}: {}".format(name, score))
     print()
 
-def save_test_session(tweets, y_test, y_predict):
+def save_test_session(tweets_test, y_test, y_predict):
     with open('test_set.log', 'w', encoding='utf-8') as test_set_file:
-        contents = '\n'.join(tweets)
+        contents = '\n'.join(tweets_test)
         test_set_file.write(contents)
     y_test.to_csv('labels.log', index=False)
     with open('predictions.log', 'w', encoding='utf-8') as predict_file:
@@ -222,9 +222,9 @@ def main():
         svc.fit(X_train, y_train, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
-        save_test_session(tweets=[tweets[index] for index in X_test['tweet_index']],
-                          y_test=y_test,
-                          y_predict=y_predict)
+
+        tweets_test = [tweets[index] for index in X_test['tweet_index']]
+        save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
 
 if __name__ == '__main__':
     start = datetime.now()

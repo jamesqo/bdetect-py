@@ -14,7 +14,7 @@ def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
     return int(row[TWEET_INDEX_COL_NO])
 
-class KernelCache(object):
+class DeltaCache(object):
     def __init__(self):
         self._dict = {}
 
@@ -49,7 +49,7 @@ class PTKernel(object):
         self.mu = mu
         self.normalize = normalize
         self._lambda2 = lambda_ ** 2
-        self._cache = KernelCache()
+        self._cache = DeltaCache()
 
     def __call__(self, treea, treeb):
         self._cache.clear()
