@@ -20,6 +20,9 @@ LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FNAME = 'tweets.txt'
 
+FIT_SAVEPATH = 'kernels.fit.log'
+PREDICT_SAVEPATH = 'kernels.predict.log'
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -80,11 +83,11 @@ def print_scores(task, model, y_test, y_predict):
 
 def save_test_session(tweets_test, y_test, y_predict):
     with open('test_set.log', 'w', encoding='utf-8') as test_set_file:
-        contents = '\n'.join(tweets_test)
+        contents = '\n'.join(tweets_test) + '\n'
         test_set_file.write(contents)
     y_test.to_csv('labels.log', index=False)
     with open('predictions.log', 'w', encoding='utf-8') as predict_file:
-        contents = '\n'.join(map(str, y_predict))
+        contents = '\n'.join(map(str, y_predict)) + '\n'
         predict_file.write(contents)
 
 def main():
@@ -112,8 +115,8 @@ def main():
 
     for kernel in ['ptk']: # 'sptk', 'csptk'
         svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c)
-        svc.fit(X_train, y_train, n_jobs=args.n_jobs)
-        y_predict = svc.predict(X_test, n_jobs=args.n_jobs)
+        svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
+        y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
 
         tweets_test = [tweets[index] for index in X_test['tweet_index']]
