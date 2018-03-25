@@ -1,12 +1,13 @@
 import numpy as np
 
+from sklearn.base import BaseEstimator
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.svm import SVC
 
 from kernels import TweetKernel
 from util import log_call
 
-class TweetSVC(object):
+class TweetSVC(BaseEstimator):
     def __init__(self, **kwargs):
         ker_kwargs = {k[len('ker_'):]: v for k, v in kwargs.items() if k.startswith('ker_')}
         kwargs = {k: v for k, v in kwargs.items() if not k.startswith('ker_')}
