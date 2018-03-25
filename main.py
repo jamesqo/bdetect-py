@@ -116,8 +116,13 @@ def task_a(X, Y, tweets, trees, args):
                                scoring='f1',
                                n_jobs=args.n_jobs
                                )
-        clf.fit(X_train, y_train)
-        y_predict = clf.predict(X_test)
+            # Since we already specified n_jobs above, we can't fork anymore here.
+            # Don't specify savepath since we don't want multiple processes writing to the same file.
+            clf.fit(X_train, y_train, n_jobs=1)
+            clf = clf.best_estimator_
+        else:
+            clf.fit(X_train, y_train, n_jobs=args.n_jobs, savepath=FIT_SAVEPATH)
+        y_predict = clf.predict(X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
 
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
         tweets_test = [tweets[index] for index in X_test['tweet_index']]
