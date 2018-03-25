@@ -7,9 +7,12 @@ from kernels import TweetKernel
 from util import log_call
 
 class TweetSVC(object):
-    def __init__(self, trees, tree_kernel, *args, **kwargs):
-        self._kernel = TweetKernel(trees, tree_kernel)
-        self._svc = SVC(kernel='precomputed', *args, **kwargs)
+    def __init__(self, **kwargs):
+        ker_kwargs = {k[len('ker_'):]: v for k, v in kwargs.items() if k.startswith('ker_')}
+        kwargs = {k: v for k, v in kwargs.items() if not k.startswith('ker_')}
+
+        self._kernel = TweetKernel(**ker_kwargs)
+        self._svc = SVC(kernel='precomputed', **kwargs)
 
     def fit(self, X, y, n_jobs=-1, savepath=None):
         log_call()

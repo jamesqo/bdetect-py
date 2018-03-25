@@ -4,9 +4,9 @@ import sys
 
 import treenode as tn
 
-def _get_tree_kernel_function(name, trees):
+def _get_tree_kernel(name, **kwargs):
     if name == 'ptk':
-        return PTKernel(trees)
+        return PTKernel(**kwargs)
 
     raise ValueError("Unrecognized tree kernel '{}'".format(name))
 
@@ -18,18 +18,17 @@ def _get_delta_cache_key(n1, n2):
     return n1.data['id'], n2.data['id']
 
 class TweetKernel(object):
-    def __init__(self, trees, tree_kernel):
-        self.trees = list(trees)
-        self.tree_kernel = tree_kernel
-        self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel, trees=trees)
+    def __init__(self, name, **kwargs):
+        self.name = name
+        self._tree_kernel = _get_tree_kernel(name, **kwargs)
 
     def __call__(self, a, b):
         indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
-        return self._tree_kernel_function(indexa, indexb)
+        return self._tree_kernel(indexa, indexb)
 
 class PTKernel(object):
-    def __init__(self, trees, lambda_=0.4, mu=0.4, normalize=True):
-        self.trees = trees
+    def __init__(self, trees, lambda_, mu, normalize=True):
+        self.trees = list(trees)
 
         self.lambda_ = lambda_
         self.mu = mu
@@ -38,7 +37,8 @@ class PTKernel(object):
 
         self.normalize = normalize
         self._delta_cache = {}
-        self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+        if normalize:
+            self._sqrt_k_cache = self._compute_sqrt_ks(trees)
 
     def __call__(self, indexa, indexb):
         self._delta_cache.clear()

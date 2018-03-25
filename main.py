@@ -29,15 +29,6 @@ PREDICTIONS_SAVEPATH = 'predictions.log'
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
-        '-c',
-        metavar='C',
-        help="set C hyperparameter of svm",
-        dest='c',
-        action='store',
-        type=float,
-        default=1.0
-    )
-    parser.add_argument(
         '-d', '--debug',
         help="print debug information",
         dest='log_level',
@@ -93,6 +84,25 @@ def save_test_session(tweets_test, y_test, y_predict):
         contents = '\n'.join(map(str, y_predict)) + '\n'
         predict_file.write(contents)
 
+def task_a(X, Y, tweets, trees, args):
+    y = Y['is_trace']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    for kernel in ['ptk']: # 'sptk', 'csptk'
+        svc = TweetSVC(C=100,
+                       class_weight='balanced',
+                       ker_name=kernel,
+                       ker_trees=trees,
+                       ker_lambda_=0.4,
+                       ker_mu=0.4
+                       )
+        svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
+        y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
+        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
+
+        tweets_test = [tweets[index] for index in X_test['tweet_index']]
+        save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
+
 def main():
     args = parse_args()
     log.basicConfig(level=args.log_level)
@@ -113,17 +123,7 @@ def main():
     X.drop(columns=['tweet'], inplace=True)
 
     # NLP Task A: Bullying trace classification
-    y = Y['is_trace']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    for kernel in ['ptk']: # 'sptk', 'csptk'
-        svc = TweetSVC(trees=trees, tree_kernel=kernel, C=args.c, class_weight='balanced')
-        svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
-        y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
-        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
-
-        tweets_test = [tweets[index] for index in X_test['tweet_index']]
-        save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
+    task_a(X, Y, tweets, trees, args)
 
 if __name__ == '__main__':
     start = datetime.now()
