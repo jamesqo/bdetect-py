@@ -1,10 +1,12 @@
 import logging as log
 import os
 import sys
+import warnings
 
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.svm import SVC
@@ -71,9 +73,9 @@ def parse_args():
 
 def get_param_grid():
     return {
-        'estimator__C': [1, 10, 100, 1000],
-        'lambda_': [x / 10 for x in range(1, 11)],
-        'mu': [x / 10 for x in range(1, 11)]
+        'estimator__C': [100, 1000],
+        'lambda_': [x / 4 for x in range(1, 5)],
+        'mu': [x / 4 for x in range(1, 5)]
     }
 
 def print_scores(task, model, y_test, y_predict):
@@ -105,15 +107,19 @@ def task_a(X, Y, tweets, trees, args):
     for kernel in ['ptk']: # 'sptk', 'csptk'
         base_clf = SVC()
         clf = TreeSVC(estimator=base_clf, kernel=kernel, trees=trees)
+
+        # TODO: Figure out how to ignore warnings here.
+        # Categories to ignore: UserWarning, UndefinedMetricWarning
         if args.grid_search:
-            # TODO: Specify n_jobs
             clf = GridSearchCV(estimator=clf,
                                param_grid=get_param_grid(),
-                               scoring='f1')
-        clf.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
-        y_predict = clf.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
-        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
+                               scoring='f1',
+                               n_jobs=args.n_jobs
+                               )
+        clf.fit(X_train, y_train)
+        y_predict = clf.predict(X_test)
 
+        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
         tweets_test = [tweets[index] for index in X_test['tweet_index']]
         save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
 
