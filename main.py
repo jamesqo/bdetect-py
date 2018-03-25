@@ -92,10 +92,10 @@ def task_a(X, Y, tweets, trees, args):
         svc = TweetSVC(C=100,
                        class_weight='balanced',
                        ker_name=kernel,
-                       ker_trees=trees,
                        ker_lambda_=0.4,
                        ker_mu=0.4
                        )
+        svc.set_trees(trees)
         svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
         y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)

@@ -15,6 +15,9 @@ class TweetSVC(BaseEstimator):
         self._kernel = TweetKernel(**ker_kwargs)
         self._svc = SVC(kernel='precomputed', **kwargs)
 
+    def set_trees(self, trees):
+        self._kernel.set_trees(trees)
+
     def fit(self, X, y, n_jobs=-1, savepath=None):
         log_call()
         self._X = X

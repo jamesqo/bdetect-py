@@ -26,19 +26,35 @@ class TweetKernel(object):
         indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
         return self._tree_kernel(indexa, indexb)
 
-class PTKernel(object):
-    def __init__(self, trees, lambda_, mu, normalize=True):
-        self.trees = list(trees)
+    def set_trees(self, trees):
+        self._tree_kernel.set_trees(trees)
 
+class PTKernel(object):
+    def __init__(self, lambda_, mu, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
         self._lambda2 = lambda_ ** 2
         self._mu_lambda2 = mu * self._lambda2
 
+        self.trees = None
         self.normalize = normalize
         self._delta_cache = {}
-        if normalize:
+        self._sqrt_k_cache = None
+
+    def set_trees(self, trees):
+        self.trees = list(trees)
+        if self.normalize:
             self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+
+    def _compute_sqrt_ks(self, trees):
+        result = []
+        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
+        k = self._kernel_no_normalize
+        for tree in trees:
+            self._delta_cache.clear()
+            sqrt_k = np.sqrt(k(tree, tree))
+            result.append(sqrt_k)
+        return result
 
     def __call__(self, indexa, indexb):
         self._delta_cache.clear()
@@ -53,16 +69,6 @@ class PTKernel(object):
         denom = self._sqrt_k_cache[indexa] * self._sqrt_k_cache[indexb]
         assert denom > 0
         return k(treea, treeb) / denom
-
-    def _compute_sqrt_ks(self, trees):
-        result = []
-        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
-        k = self._kernel_no_normalize
-        for tree in trees:
-            self._delta_cache.clear()
-            sqrt_k = np.sqrt(k(tree, tree))
-            result.append(sqrt_k)
-        return result
 
     def _kernel_no_normalize(self, treea, treeb):
         result = 0
