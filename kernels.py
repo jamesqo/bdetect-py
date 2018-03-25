@@ -26,25 +26,17 @@ class TreeKernel(object):
         indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
         return self._real_kernel(indexa, indexb)
 
-    def set_trees(self, trees):
-        self._real_kernel.trees = trees
-
 class PTKernel(object):
-    def __init__(self, lambda_, mu, normalize=True):
+    def __init__(self, trees, lambda_, mu, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
         self._lambda2 = lambda_ ** 2
         self._mu_lambda2 = mu * self._lambda2
 
-        self.trees = None
+        self.trees = trees
         self.normalize = normalize
         self._delta_cache = {}
-        self._sqrt_k_cache = None
-
-    def set_trees(self, trees):
-        self.trees = list(trees)
-        if self.normalize:
-            self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+        self._sqrt_k_cache = self._compute_sqrt_ks(trees)
 
     def _compute_sqrt_ks(self, trees):
         result = []

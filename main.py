@@ -104,8 +104,7 @@ def task_a(X, Y, tweets, trees, args):
 
     for kernel in ['ptk']: # 'sptk', 'csptk'
         base_clf = SVC()
-        clf = TreeSVC(estimator=base_clf, kernel=kernel)
-        clf.trees = trees
+        clf = TreeSVC(estimator=base_clf, kernel=kernel, trees=trees)
         if args.grid_search:
             # TODO: Specify n_jobs
             clf = GridSearchCV(estimator=clf,
