@@ -120,6 +120,7 @@ def task_a(X, Y, tweets, trees, args):
             # Don't specify savepath since we don't want multiple processes writing to the same file.
             clf.fit(X_train, y_train, n_jobs=1)
             clf = clf.best_estimator_
+            print(clf.best_params_)
         else:
             clf.fit(X_train, y_train, n_jobs=args.n_jobs, savepath=FIT_SAVEPATH)
         y_predict = clf.predict(X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
