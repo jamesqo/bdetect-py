@@ -6,10 +6,11 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.svm import SVC
 
 from data_prep import add_tweet_index, load_tweets, load_tweet_labels
-from svm import TweetSVC
+from svm import TreeSVC
 from tbparser import TweeboParser
 from util import log_call
 
@@ -37,6 +38,12 @@ def parse_args():
         default=log.WARNING
     )
     parser.add_argument(
+        '-g', '--grid-search',
+        help="run grid search and print optimal hyperparameters",
+        dest='grid_search',
+        action='store_true'
+    )
+    parser.add_argument(
         '-m', '--max-tweets',
         metavar='LIMIT',
         help="load at most LIMIT tweets into the corpus. useful for quick debugging",
@@ -61,6 +68,13 @@ def parse_args():
         action='store_true'
     )
     return parser.parse_args()
+
+def get_param_grid():
+    return {
+        'estimator__C': [1, 10, 100, 1000],
+        'lambda_': [x / 10 for x in range(1, 11)],
+        'mu': [x / 10 for x in range(1, 11)]
+    }
 
 def print_scores(task, model, y_test, y_predict):
     scores = OrderedDict([
@@ -89,15 +103,16 @@ def task_a(X, Y, tweets, trees, args):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in ['ptk']: # 'sptk', 'csptk'
-        svc = TweetSVC(C=100,
-                       class_weight='balanced',
-                       ker_name=kernel,
-                       ker_lambda_=0.4,
-                       ker_mu=0.4
-                       )
-        svc.set_trees(trees)
-        svc.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
-        y_predict = svc.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
+        base_clf = SVC()
+        clf = TreeSVC(estimator=base_clf, kernel=kernel)
+        clf.trees = trees
+        if args.grid_search:
+            # TODO: Specify n_jobs
+            clf = GridSearchCV(estimator=clf,
+                               param_grid=get_param_grid(),
+                               scoring='f1')
+        clf.fit(X_train, y_train, savepath=FIT_SAVEPATH, n_jobs=args.n_jobs)
+        y_predict = clf.predict(X_test, savepath=PREDICT_SAVEPATH, n_jobs=args.n_jobs)
         print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
 
         tweets_test = [tweets[index] for index in X_test['tweet_index']]

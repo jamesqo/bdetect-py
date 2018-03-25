@@ -8,7 +8,7 @@ def _get_tree_kernel(name, **kwargs):
     if name == 'ptk':
         return PTKernel(**kwargs)
 
-    raise ValueError("Unrecognized tree kernel '{}'".format(name))
+    raise ValueError("Unrecognized tree kernel: {}".format(name))
 
 def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
@@ -17,17 +17,17 @@ def _get_tweet_index(row):
 def _get_delta_cache_key(n1, n2):
     return n1.data['id'], n2.data['id']
 
-class TweetKernel(object):
+class TreeKernel(object):
     def __init__(self, name, **kwargs):
         self.name = name
-        self._tree_kernel = _get_tree_kernel(name, **kwargs)
+        self._real_kernel = _get_tree_kernel(name, **kwargs)
 
     def __call__(self, a, b):
         indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
-        return self._tree_kernel(indexa, indexb)
+        return self._real_kernel(indexa, indexb)
 
     def set_trees(self, trees):
-        self._tree_kernel.set_trees(trees)
+        self._real_kernel.trees = trees
 
 class PTKernel(object):
     def __init__(self, lambda_, mu, normalize=True):
@@ -48,19 +48,14 @@ class PTKernel(object):
 
     def _compute_sqrt_ks(self, trees):
         result = []
-        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
         k = self._kernel_no_normalize
         for tree in trees:
-            self._delta_cache.clear()
             sqrt_k = np.sqrt(k(tree, tree))
             result.append(sqrt_k)
         return result
 
     def __call__(self, indexa, indexb):
-        self._delta_cache.clear()
-
         treea, treeb = self.trees[indexa], self.trees[indexb]
-        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -71,6 +66,8 @@ class PTKernel(object):
         return k(treea, treeb) / denom
 
     def _kernel_no_normalize(self, treea, treeb):
+        self._delta_cache.clear()
+
         result = 0
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
