@@ -36,15 +36,12 @@ class PTKernel(object):
         self.trees = trees
         self.normalize = normalize
         self._delta_cache = {}
-        self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+        if normalize:
+            self._sqrt_k_cache = self._compute_sqrt_ks(trees)
 
     def _compute_sqrt_ks(self, trees):
-        result = []
         k = self._kernel_no_normalize
-        for tree in trees:
-            sqrt_k = np.sqrt(k(tree, tree))
-            result.append(sqrt_k)
-        return result
+        return [np.sqrt(k(tree, tree)) for tree in trees]
 
     def __call__(self, indexa, indexb):
         treea, treeb = self.trees[indexa], self.trees[indexb]

@@ -78,7 +78,26 @@ def get_param_grid():
         'mu': [x / 4 for x in range(1, 5)]
     }
 
-def print_scores(task, model, y_test, y_predict):
+def run_grid_search(estimator, param_grid, X, y, n_jobs):
+    clf = GridSearchCV(estimator=estimator,
+                       param_grid=get_param_grid(),
+                       scoring='f1',
+                       n_jobs=args.n_jobs
+                       )
+    clf.fit(X_train, y_train)
+    return clf.best_estimator_, clf.best_params_
+
+def print_header(task, model):
+    print("task {}, model {}".format(task, model))
+    print()
+
+def print_best_params(best_params):
+    print("best hyperparameter values:")
+    for key in sorted(best_params.keys()):
+        print("{}: {}".format(key, best_params[key]))
+    print()
+
+def print_scores(y_test, y_predict):
     scores = OrderedDict([
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
         ('precision', precision_score(y_true=y_test, y_pred=y_predict)),
@@ -86,7 +105,6 @@ def print_scores(task, model, y_test, y_predict):
         ('f1', f1_score(y_true=y_test, y_pred=y_predict))
     ])
 
-    print("task {}, model {}".format(task, model))
     for name, score in scores.items():
         print("{}: {}".format(name, score))
     print()
@@ -105,27 +123,27 @@ def task_a(X, Y, tweets, trees, args):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     for kernel in ['ptk']: # 'sptk', 'csptk'
+        print_header(task='a', model='svm+{}'.format(kernel))
+
         base_clf = SVC()
         clf = TreeSVC(estimator=base_clf, kernel=kernel, trees=trees)
-
-        # TODO: Figure out how to ignore warnings here.
-        # Categories to ignore: UserWarning, UndefinedMetricWarning
         if args.grid_search:
-            clf = GridSearchCV(estimator=clf,
-                               param_grid=get_param_grid(),
-                               scoring='f1',
-                               n_jobs=args.n_jobs
-                               )
-            # Since we already specified n_jobs above, we can't fork anymore here.
-            # Don't specify savepath since we don't want multiple processes writing to the same file.
-            clf.fit(X_train, y_train, n_jobs=1)
-            clf = clf.best_estimator_
-            print(clf.best_params_)
+            clf, best_params = run_grid_search(estimator=clf,
+                                               param_grid=get_param_grid(),
+                                               X=X_train,
+                                               y=y_train,
+                                               n_jobs=args.n_jobs
+                                               )
+            print_best_params(best_params)
         else:
-            clf.fit(X_train, y_train, n_jobs=args.n_jobs, savepath=FIT_SAVEPATH)
+            clf.fit(X=X_train,
+                    y=y_train,
+                    n_jobs=args.n_jobs,
+                    savepath=FIT_SAVEPATH
+                    )
         y_predict = clf.predict(X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
+        print_scores(y_test=y_test, y_predict=y_predict)
 
-        print_scores(task='a', model='svm+{}'.format(kernel), y_test=y_test, y_predict=y_predict)
         tweets_test = [tweets[index] for index in X_test['tweet_index']]
         save_test_session(tweets_test=tweets_test, y_test=y_test, y_predict=y_predict)
 
