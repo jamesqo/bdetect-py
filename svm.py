@@ -21,6 +21,9 @@ class TreeSVC(BaseEstimator):
         self.normalize = normalize
         self.trees = trees
 
+        self._X = None
+        self.kernel_matrix_ = None
+
     @property
     def _kernel_function(self):
         return TreeKernel(name=self.kernel,

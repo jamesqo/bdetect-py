@@ -13,6 +13,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.svm import SVC
 
 from data_prep import add_tweet_index, load_tweets, load_tweet_labels
+from suppress_warnings import SuppressWarningsEstimator
 from svm import TreeSVC
 from tbparser import TweeboParser
 from util import log_call
@@ -76,10 +77,13 @@ def fit(clf, X_train, y_train, args):
     if args.grid_search:
         log.debug("-g specified, not saving kernel matrix for fit()")
 
+        clf = SuppressWarningsEstimator(inner=clf,
+                                        categories=[UserWarning, UndefinedMetricWarning])
         clf, best_params = run_grid_search(estimator=clf,
                                            X_train=X_train,
                                            y_train=y_train,
                                            n_jobs=args.n_jobs)
+        clf = clf.inner
         print_best_params(best_params)
     else:
         clf.fit(X=X_train,
