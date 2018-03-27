@@ -27,8 +27,7 @@ class TreeSVC(BaseEstimator):
                           trees=self.trees,
                           lambda_=self.lambda_,
                           mu=self.mu,
-                          normalize=self.normalize
-                          )
+                          normalize=self.normalize)
 
     def fit(self, X, y, n_jobs=-1, savepath=None):
         log_call()

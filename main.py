@@ -1,4 +1,5 @@
 import logging as log
+import numpy as np
 import os
 import sys
 import warnings
@@ -71,21 +72,36 @@ def parse_args():
     )
     return parser.parse_args()
 
-def get_param_grid():
-    return {
-        'estimator__C': [100, 1000],
-        'lambda_': [x / 4 for x in range(1, 5)],
-        'mu': [x / 4 for x in range(1, 5)]
-    }
+def fit(clf, X_train, y_train, args):
+    if args.grid_search:
+        log.debug("-g specified, not saving kernel matrix for fit()")
 
-def run_grid_search(estimator, param_grid, X, y, n_jobs):
+        clf, best_params = run_grid_search(estimator=clf,
+                                           X_train=X_train,
+                                           y_train=y_train,
+                                           n_jobs=args.n_jobs)
+        print_best_params(best_params)
+    else:
+        clf.fit(X=X_train,
+                y=y_train,
+                n_jobs=args.n_jobs,
+                savepath=FIT_SAVEPATH)
+    return clf
+
+def run_grid_search(estimator, X_train, y_train, n_jobs):
     clf = GridSearchCV(estimator=estimator,
                        param_grid=get_param_grid(),
                        scoring='f1',
-                       n_jobs=args.n_jobs
-                       )
+                       n_jobs=n_jobs)
     clf.fit(X_train, y_train)
     return clf.best_estimator_, clf.best_params_
+
+def get_param_grid():
+    return {
+        'estimator__C': [100, 1000],
+        'lambda_': np.linspace(0.25, 1, 4),
+        'mu': np.linspace(0.25, 1, 4)
+    }
 
 def print_header(task, model):
     print("task {}, model {}".format(task, model))
@@ -127,20 +143,8 @@ def task_a(X, Y, tweets, trees, args):
 
         base_clf = SVC()
         clf = TreeSVC(estimator=base_clf, kernel=kernel, trees=trees)
-        if args.grid_search:
-            clf, best_params = run_grid_search(estimator=clf,
-                                               param_grid=get_param_grid(),
-                                               X=X_train,
-                                               y=y_train,
-                                               n_jobs=args.n_jobs
-                                               )
-            print_best_params(best_params)
-        else:
-            clf.fit(X=X_train,
-                    y=y_train,
-                    n_jobs=args.n_jobs,
-                    savepath=FIT_SAVEPATH
-                    )
+        fit(clf, X_train, y_train, args)
+
         y_predict = clf.predict(X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
         print_scores(y_test=y_test, y_predict=y_predict)
 
@@ -174,4 +178,4 @@ if __name__ == '__main__':
     main()
     end = datetime.now()
     seconds = (end - start).seconds
-    print("Finished running in {}s".format(seconds), file=sys.stderr)
+    log.debug("finished running in {}s".format(seconds))
