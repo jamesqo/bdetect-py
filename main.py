@@ -13,7 +13,6 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.svm import SVC
 
 from data_prep import add_tweet_index, load_tweets, load_tweet_labels
-from suppress_warnings import SuppressWarningsEstimator
 from svm import TreeSVC
 from tbparser import TweeboParser
 from util import log_call
@@ -73,17 +72,18 @@ def parse_args():
     )
     return parser.parse_args()
 
+def get_warnings_to_ignore(args):
+    return [UserWarning, UndefinedMetricWarning] if args.grid_search else []
+
 def fit(clf, X_train, y_train, args):
+    log_call()
     if args.grid_search:
         log.debug("-g specified, not saving kernel matrix for fit()")
 
-        clf = SuppressWarningsEstimator(inner=clf,
-                                        categories=[UserWarning, UndefinedMetricWarning])
         clf, best_params = run_grid_search(estimator=clf,
                                            X_train=X_train,
                                            y_train=y_train,
                                            n_jobs=args.n_jobs)
-        clf = clf.inner
         print_best_params(best_params)
     else:
         clf.fit(X=X_train,
@@ -93,6 +93,7 @@ def fit(clf, X_train, y_train, args):
     return clf
 
 def run_grid_search(estimator, X_train, y_train, n_jobs):
+    log_call()
     clf = GridSearchCV(estimator=estimator,
                        param_grid=get_param_grid(),
                        scoring='f1',
@@ -106,6 +107,10 @@ def get_param_grid():
         'lambda_': np.linspace(0.25, 1, 4),
         'mu': np.linspace(0.25, 1, 4)
     }
+
+def predict(clf, X_test, **kwargs):
+    log_call()
+    return clf.predict(X_test, **kwargs)
 
 def print_header(task, model):
     print("task {}, model {}".format(task, model))
@@ -139,6 +144,7 @@ def save_test_session(tweets_test, y_test, y_predict):
         predict_file.write(contents)
 
 def task_a(X, Y, tweets, trees, args):
+    log_call()
     y = Y['is_trace']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -146,10 +152,13 @@ def task_a(X, Y, tweets, trees, args):
         print_header(task='a', model='svm+{}'.format(kernel))
 
         base_clf = SVC()
-        clf = TreeSVC(estimator=base_clf, kernel=kernel, trees=trees)
+        clf = TreeSVC(estimator=base_clf,
+                      kernel=kernel,
+                      trees=trees,
+                      ignore_warnings=get_warnings_to_ignore(args))
         fit(clf, X_train, y_train, args)
 
-        y_predict = clf.predict(X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
+        y_predict = predict(clf, X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
         print_scores(y_test=y_test, y_predict=y_predict)
 
         tweets_test = [tweets[index] for index in X_test['tweet_index']]
