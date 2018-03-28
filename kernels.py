@@ -4,11 +4,11 @@ import sys
 
 import treenode as tn
 
-def _get_tree_kernel_function(name, trees):
+def _get_tree_kernel(name, **kwargs):
     if name == 'ptk':
-        return PTKernel(trees)
+        return PTKernel(**kwargs)
 
-    raise ValueError("Unrecognized tree kernel '{}'".format(name))
+    raise ValueError("Unrecognized tree kernel: {}".format(name))
 
 def _get_tweet_index(row):
     TWEET_INDEX_COL_NO = 0
@@ -17,34 +17,34 @@ def _get_tweet_index(row):
 def _get_delta_cache_key(n1, n2):
     return n1.data['id'], n2.data['id']
 
-class TweetKernel(object):
-    def __init__(self, trees, tree_kernel):
-        self.trees = list(trees)
-        self.tree_kernel = tree_kernel
-        self._tree_kernel_function = _get_tree_kernel_function(name=tree_kernel, trees=trees)
+class TreeKernel(object):
+    def __init__(self, name, **kwargs):
+        self.name = name
+        self._real_kernel = _get_tree_kernel(name, **kwargs)
 
     def __call__(self, a, b):
         indexa, indexb = _get_tweet_index(a), _get_tweet_index(b)
-        return self._tree_kernel_function(indexa, indexb)
+        return self._real_kernel(indexa, indexb)
 
 class PTKernel(object):
-    def __init__(self, trees, lambda_=0.4, mu=0.4, normalize=True):
-        self.trees = trees
-
+    def __init__(self, trees, lambda_, mu, normalize=True):
         self.lambda_ = lambda_
         self.mu = mu
         self._lambda2 = lambda_ ** 2
         self._mu_lambda2 = mu * self._lambda2
 
+        self.trees = trees
         self.normalize = normalize
         self._delta_cache = {}
-        self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+        if normalize:
+            self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+
+    def _compute_sqrt_ks(self, trees):
+        k = self._kernel_no_normalize
+        return [np.sqrt(k(tree, tree)) for tree in trees]
 
     def __call__(self, indexa, indexb):
-        self._delta_cache.clear()
-
         treea, treeb = self.trees[indexa], self.trees[indexb]
-        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
         k = self._kernel_no_normalize
         if not self.normalize:
             return k(treea, treeb)
@@ -54,17 +54,9 @@ class PTKernel(object):
         assert denom > 0
         return k(treea, treeb) / denom
 
-    def _compute_sqrt_ks(self, trees):
-        result = []
-        # IMPORTANT NOTE: You must clear the delta cache in between multiple calls to k.
-        k = self._kernel_no_normalize
-        for tree in trees:
-            self._delta_cache.clear()
-            sqrt_k = np.sqrt(k(tree, tree))
-            result.append(sqrt_k)
-        return result
-
     def _kernel_no_normalize(self, treea, treeb):
+        self._delta_cache.clear()
+
         result = 0
         node_pairs = tn.matching_descendants(treea, treeb)
         for a, b in node_pairs:
