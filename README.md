@@ -42,7 +42,7 @@ Once you've taken care of the steps above, run these commands:
 
 ```sh
 git submodule update --init --recursive
-pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt
 # Type 'n' when prompted whether you have already downloaded models.
 python3 main.py
 ```
