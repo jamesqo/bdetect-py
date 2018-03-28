@@ -15,6 +15,7 @@ To parse each tweet into a dependency tree so it can be fed to a tree kernel, we
 **Prequisites:**
 
 - Python 3
+- Pip
 - Standard build tools (i.e. make)
 - GNU Autoconf / m4
 - CMake
@@ -28,7 +29,7 @@ To parse each tweet into a dependency tree so it can be fed to a tree kernel, we
 On Ubuntu you can install all of the prequisites with the following commands. Modify as appropriate if you're using a different OS.
 
 ```sh
-sudo apt-get install python3 build-essential autoconf m4 cmake automake perl python
+sudo apt-get install python3 python3-pip build-essential autoconf m4 cmake automake perl python
 
 # Install Java 7 or 8 (depending on your system): https://stackoverflow.com/a/16263651/4077294
 # For Ubuntu 16.04 and higher:
@@ -41,6 +42,7 @@ Once you've taken care of the steps above, run these commands:
 
 ```sh
 git submodule update --init --recursive
+pip3 install -r requirements.txt
 # Type 'n' when prompted whether you have already downloaded models.
 python3 main.py
 ```
