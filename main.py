@@ -106,9 +106,9 @@ def run_grid_search(estimator, X_train, y_train, n_jobs):
 
 def get_param_grid():
     return {
-        'estimator__C': [100, 1000],
-        'lambda_': np.linspace(0.25, 1, 4),
-        'mu': np.linspace(0.25, 1, 4)
+        'estimator__C': np.linspace(100, 300, 3),
+        'lambda_': np.linspace(0.25, 0.50, 2),
+        'mu': np.linspace(0.25, 0.50, 2)
     }
 
 def predict(clf, X_test, **kwargs):

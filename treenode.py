@@ -2,7 +2,7 @@ def _comparison_tuple(node):
     return node.data['upostag'], \
            node.data['xpostag'], \
            node.data['deprel'], \
-           node.data['form']
+           node.data['lemma']
 
 def eq(nodea, nodeb):
     return _comparison_tuple(nodea) == _comparison_tuple(nodeb)
