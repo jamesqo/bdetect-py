@@ -1,10 +1,7 @@
-import logging as log
 import numpy as np
 import warnings
 
-from inspect import stack
 from sklearn.base import BaseEstimator
-from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.svm import SVC
 

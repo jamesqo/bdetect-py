@@ -30,7 +30,7 @@ TEST_SET_SAVEPATH = 'test_set.log'
 LABELS_SAVEPATH = 'labels.log'
 PREDICTIONS_SAVEPATH = 'predictions.log'
 
-GRID_SEARCH_WARNINGS_TO_IGNORE = [UserWarning, UndefinedMetricWarning]
+GRID_SEARCH_IGNORE_WARNINGS = [UserWarning, UndefinedMetricWarning]
 
 def parse_args():
     parser = ArgumentParser()
@@ -78,7 +78,7 @@ def fit(clf, X_train, y_train, args):
     log_call()
 
     if args.grid_search:
-        clf.ignore_warnings = GRID_SEARCH_WARNINGS_TO_IGNORE
+        clf.ignore_warnings = GRID_SEARCH_IGNORE_WARNINGS
         best_params = run_grid_search(estimator=clf,
                                       X_train=X_train,
                                       y_train=y_train,
