@@ -30,6 +30,8 @@ TEST_SET_SAVEPATH = 'test_set.log'
 LABELS_SAVEPATH = 'labels.log'
 PREDICTIONS_SAVEPATH = 'predictions.log'
 
+GRID_SEARCH_WARNINGS_TO_IGNORE = [UserWarning, UndefinedMetricWarning]
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument(
@@ -72,24 +74,24 @@ def parse_args():
     )
     return parser.parse_args()
 
-def get_warnings_to_ignore(args):
-    return [UserWarning, UndefinedMetricWarning] if args.grid_search else []
-
 def fit(clf, X_train, y_train, args):
     log_call()
-    if args.grid_search:
-        log.debug("-g specified, not saving kernel matrix for fit()")
 
-        clf, best_params = run_grid_search(estimator=clf,
-                                           X_train=X_train,
-                                           y_train=y_train,
-                                           n_jobs=args.n_jobs)
+    if args.grid_search:
+        clf.ignore_warnings = GRID_SEARCH_WARNINGS_TO_IGNORE
+        best_params = run_grid_search(estimator=clf,
+                                      X_train=X_train,
+                                      y_train=y_train,
+                                      n_jobs=args.n_jobs)
+        clf.ignore_warnings = []
+
         print_best_params(best_params)
-    else:
-        clf.fit(X=X_train,
-                y=y_train,
-                n_jobs=args.n_jobs,
-                savepath=FIT_SAVEPATH)
+        clf.set_params(**best_params)
+
+    clf.fit(X=X_train,
+            y=y_train,
+            n_jobs=args.n_jobs,
+            savepath=FIT_SAVEPATH)
     return clf
 
 def run_grid_search(estimator, X_train, y_train, n_jobs):
@@ -97,9 +99,10 @@ def run_grid_search(estimator, X_train, y_train, n_jobs):
     clf = GridSearchCV(estimator=estimator,
                        param_grid=get_param_grid(),
                        scoring='f1',
-                       n_jobs=n_jobs)
+                       n_jobs=n_jobs,
+                       refit=False)
     clf.fit(X_train, y_train)
-    return clf.best_estimator_, clf.best_params_
+    return clf.best_params_
 
 def get_param_grid():
     return {
@@ -154,8 +157,7 @@ def task_a(X, Y, tweets, trees, args):
         base_clf = SVC()
         clf = TreeSVC(estimator=base_clf,
                       kernel=kernel,
-                      trees=trees,
-                      ignore_warnings=get_warnings_to_ignore(args))
+                      trees=trees)
         fit(clf, X_train, y_train, args)
 
         y_predict = predict(clf, X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
