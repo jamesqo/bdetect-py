@@ -11,7 +11,8 @@ class TreeSVC(BaseEstimator):
     def __init__(self, estimator, kernel, trees, lambda_=0.4, mu=0.4, normalize=True, onfirstfit=None):
         if not isinstance(estimator, SVC):
             raise TypeError(
-                "'estimator' should be SVC but instead was {}".format(type(estimator).__name__))
+                "'estimator' should be SVC but instead was {}".format(
+                    type(estimator).__name__))
         estimator.kernel = 'precomputed'
 
         self.estimator = estimator
