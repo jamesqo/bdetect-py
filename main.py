@@ -9,7 +9,7 @@ from collections import OrderedDict
 from datetime import datetime
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from sklearn.svm import SVC
 
 from data_prep import add_tweet_index, load_tweets, load_tweet_labels
@@ -41,12 +41,6 @@ def parse_args():
         default=log.WARNING
     )
     parser.add_argument(
-        '-g', '--grid-search',
-        help="run grid search and print optimal hyperparameters",
-        dest='grid_search',
-        action='store_true'
-    )
-    parser.add_argument(
         '-m', '--max-tweets',
         metavar='LIMIT',
         help="load at most LIMIT tweets into the corpus. useful for quick debugging",
@@ -65,6 +59,12 @@ def parse_args():
         default=-1
     )
     parser.add_argument(
+        '-o', '--optimize-params',
+        help="run randomized search to find optimal hyperparameters",
+        dest='optimize_params',
+        action='store_true'
+    )
+    parser.add_argument(
         '-r', '--refresh-predictions',
         help="refresh predictions by re-running TweeboParser on the corpus (this will take a while)",
         dest='refresh_predictions',
@@ -75,10 +75,10 @@ def parse_args():
 def fit(clf, X_train, y_train, args):
     log_call()
 
-    if args.grid_search:
+    if args.optimize_params:
         clf.onfirstfit = lambda: \
             warnings.simplefilter('ignore', category=UndefinedMetricWarning)
-        best_params = run_grid_search(estimator=clf,
+        best_params = optimize_params(estimator=clf,
                                       X_train=X_train,
                                       y_train=y_train,
                                       n_jobs=args.n_jobs)
@@ -93,13 +93,14 @@ def fit(clf, X_train, y_train, args):
             savepath=FIT_SAVEPATH)
     return clf
 
-def run_grid_search(estimator, X_train, y_train, n_jobs):
+def optimize_params(estimator, X_train, y_train, n_jobs):
     log_call()
-    clf = GridSearchCV(estimator=estimator,
-                       param_grid=get_param_grid(),
-                       scoring='f1',
-                       n_jobs=n_jobs,
-                       refit=False)
+    clf = RandomizedSearchCV(estimator=estimator,
+                             param_distributions=get_param_grid(),
+                             scoring='f1',
+                             n_jobs=n_jobs,
+                             refit=False,
+                             random_state=42)
     clf.fit(X_train, y_train)
     return clf.best_params_
 
