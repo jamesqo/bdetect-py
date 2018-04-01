@@ -24,6 +24,8 @@ LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FNAME = 'tweets.txt'
 
+DEFAULT_ITERATIONS = 100
+
 FIT_SAVEPATH = 'kernels.fit.csv'
 PREDICT_SAVEPATH = 'kernels.predict.csv'
 TEST_SET_SAVEPATH = 'test_set.log'
@@ -37,8 +39,8 @@ def parse_args():
     parser.add_argument(
         '-d', '--debug',
         help="print debug information",
-        dest='log_level',
         action='store_const',
+        dest='log_level',
         const=log.DEBUG,
         default=log.WARNING
     )
@@ -46,8 +48,8 @@ def parse_args():
         '-m', '--max-tweets',
         metavar='LIMIT',
         help="load at most LIMIT tweets into the corpus. useful for quick debugging",
-        dest='max_tweets',
         action='store',
+        dest='max_tweets',
         type=int,
         default=-1
     )
@@ -55,33 +57,40 @@ def parse_args():
         '-n', '--n-jobs',
         metavar='N',
         help="use N cpus to compute gram matrix in parallel. N=-1 means use all cpus, N=-2 means use all but 1 cpu, and so on. setting N=1 is recommended for debugging",
-        dest='n_jobs',
         action='store',
+        dest='n_jobs',
         type=int,
         default=-1
     )
     parser.add_argument(
         '-o', '--optimize-params',
-        help="run randomized search to find optimal hyperparameters",
-        dest='optimize_params',
-        action='store_true'
+        metavar='ITERATIONS',
+        help="run randomized search ITERATIONS times to optimize hyperparameters. ITERATIONS defaults to {}".format(DEFAULT_ITERATIONS),
+        action='store',
+        nargs='?',
+        dest='n_iter',
+        type=int,
+        const=DEFAULT_ITERATIONS,
+        default=-1
     )
     parser.add_argument(
         '-r', '--refresh-predictions',
         help="refresh predictions by re-running TweeboParser on the corpus (this will take a while)",
-        dest='refresh_predictions',
-        action='store_true'
+        action='store_true',
+        dest='refresh_predictions'
     )
     return parser.parse_args()
 
 def fit(clf, X_train, y_train, args):
     log_call()
 
-    if args.optimize_params:
+    optimize_params = args.n_iter != -1
+    if optimize_params:
         clf.ignore_warnings = GRID_SEARCH_IGNORE_WARNINGS
         best_params = optimize_params(estimator=clf,
                                       X_train=X_train,
                                       y_train=y_train,
+                                      n_iter=args.n_iter,
                                       n_jobs=args.n_jobs)
         clf.ignore_warnings = []
 
@@ -94,10 +103,11 @@ def fit(clf, X_train, y_train, args):
             savepath=FIT_SAVEPATH)
     return clf
 
-def optimize_params(estimator, X_train, y_train, n_jobs):
+def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
     log_call()
     clf = RandomizedSearchCV(estimator=estimator,
                              param_distributions=get_param_grid(),
+                             n_iter=n_iter,
                              scoring='f1',
                              n_jobs=n_jobs,
                              refit=False,
@@ -107,9 +117,9 @@ def optimize_params(estimator, X_train, y_train, n_jobs):
 
 def get_param_grid():
     return {
-        'estimator__C': np.linspace(100, 300, 3),
-        'lambda_': np.linspace(0.10, 0.30, 3),
-        'mu': np.linspace(0.10, 0.30, 3)
+        'estimator__C': [0.01, 0.1, 1, 10, 100],
+        'lambda_': np.linspace(0.1, 1, 10),
+        'mu': np.linspace(0.1, 1, 10)
     }
 
 def predict(clf, X_test, **kwargs):
