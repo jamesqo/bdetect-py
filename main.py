@@ -8,6 +8,7 @@ import warnings
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import KernelPCA
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
@@ -141,11 +142,13 @@ def visualize(kmat, labels):
     m = labels.shape[0]
     assert kmat.shape == (m, m)
 
-    kpca = KernelPCA(n_components=2, kernel='precomputed')
+    kpca = KernelPCA(n_components=3, kernel='precomputed')
     kmat_reduced = kpca.fit_transform(kmat)
 
-    x, y = kmat_reduced[:, 0], kmat_reduced[:, 1]
-    plt.scatter(x, y, c=labels, cmap='cool')
+    x, y, z = kmat_reduced[:, 0], kmat_reduced[:, 1], kmat_reduced[:, 2]
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x, y, z, c=labels, cmap='cool')
     plt.show()
 
 def predict(clf, X_test, **kwargs):
