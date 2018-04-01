@@ -27,6 +27,9 @@ LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FNAME = 'tweets.txt'
 
+DEFAULT_LAMBDA = 0.5
+DEFAULT_MU = 0.1
+DEFAULT_C = 100.0
 DEFAULT_ITERATIONS = 100
 
 FIT_SAVEPATH = 'kernels.fit.csv'
@@ -198,10 +201,13 @@ def task_a(X, Y, tweets, trees, args):
     for kernel in ['ptk']: # 'sptk', 'csptk'
         print_header(task='a', model='svm+{}'.format(kernel))
 
-        base_clf = SVC(class_weight='balanced')
+        base_clf = SVC(C=DEFAULT_C,
+                       class_weight='balanced')
         clf = TreeSVC(estimator=base_clf,
                       kernel=kernel,
-                      trees=trees)
+                      trees=trees,
+                      lambda_=DEFAULT_LAMBDA,
+                      mu=DEFAULT_MU)
         fit(clf, X_train, y_train, args)
         if args.visualize:
             visualize(kmat=clf.kernel_matrix_, labels=y_train)
