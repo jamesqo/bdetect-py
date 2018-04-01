@@ -124,7 +124,7 @@ def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
 
 def get_param_grid():
     return {
-        'estimator__C': [0.01, 0.1, 1, 10, 100],
+        'estimator__C': 10 ** np.arange(-2, 3, dtype=np.float64),
         'lambda_': np.linspace(0.5, 1, 6),
         'mu': np.linspace(0.1, 0.5, 5)
     }
