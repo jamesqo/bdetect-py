@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from sklearn.base import BaseEstimator
 from sklearn.metrics.pairwise import pairwise_kernels
@@ -8,7 +9,7 @@ from kernels import TreeKernel
 from util import log_call
 
 class TreeSVC(BaseEstimator):
-    def __init__(self, estimator, kernel, trees, lambda_=0.4, mu=0.4, normalize=True, onfirstfit=None):
+    def __init__(self, estimator, kernel, trees, lambda_=0.4, mu=0.4, normalize=True, ignore_warnings=[]):
         if not isinstance(estimator, SVC):
             raise TypeError(
                 "'estimator' should be SVC but instead was {}".format(
@@ -21,11 +22,11 @@ class TreeSVC(BaseEstimator):
         self.mu = mu
         self.normalize = normalize
         self.trees = trees
-        self.onfirstfit = onfirstfit
+        self.ignore_warnings = ignore_warnings
 
         self._X = None
         self.kernel_matrix_ = None
-        self._fit_called = False
+        self._ignored_warnings = False
 
     @property
     def _kernel_function(self):
@@ -35,10 +36,19 @@ class TreeSVC(BaseEstimator):
                           mu=self.mu,
                           normalize=self.normalize)
 
+    def _ignore_warnings(self):
+        # NOTE: These filters are not undone on purpose.
+        # The reason is, the warnings we want to ignore only appear when grid search is being done in parallel.
+        # The code that runs this method in parallel is in Scikit-Learn, outside of our control.
+        # Since warnings.catch_warnings() does not work across processes, our only option is to filter warnings inside
+        # the code being run in parallel that we control, and not undo the filters so it affects the Scikit-Learn code.
+        if not self._ignored_warnings:
+            for category in self.ignore_warnings:
+                warnings.simplefilter('ignore', category=category)
+            self._ignored_warnings = True
+
     def fit(self, X, y, n_jobs=1, savepath=None):
-        if not self._fit_called:
-            self.onfirstfit()
-            self._fit_called = True
+        self._ignore_warnings()
 
         self._X = X
         self.kernel_matrix_ = pairwise_kernels(X, self._X, metric=self._kernel_function, n_jobs=n_jobs)
