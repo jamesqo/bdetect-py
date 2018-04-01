@@ -9,7 +9,7 @@ from collections import OrderedDict
 from datetime import datetime
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.model_selection import ParameterGrid, RandomizedSearchCV, train_test_split
 from sklearn.svm import SVC
 
 from data_prep import add_tweet_index, load_tweets, load_tweet_labels
@@ -84,14 +84,19 @@ def parse_args():
 def fit(clf, X_train, y_train, args):
     log_call()
 
-    optimize_params = args.n_iter != -1
-    if optimize_params:
+    should_optimize_params = args.n_iter != -1
+    if should_optimize_params:
+        # NOTE: It would be cleaner to pass an arbitrary function to run on the
+        # first fit() call so warning handling wouldn't be coupled to the class.
+        # However that proved to be problematic since lambdas can't be pickled.
         clf.ignore_warnings = GRID_SEARCH_IGNORE_WARNINGS
         best_params = optimize_params(estimator=clf,
                                       X_train=X_train,
                                       y_train=y_train,
                                       n_iter=args.n_iter,
                                       n_jobs=args.n_jobs)
+        # Reset ignore_warnings so the original copy of clf, which hasn't been
+        # fitted yet, doesn't ignore any warnings during fit()
         clf.ignore_warnings = []
 
         print_best_params(best_params)
@@ -105,8 +110,10 @@ def fit(clf, X_train, y_train, args):
 
 def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
     log_call()
+    param_grid = get_param_grid()
+    n_iter = min(n_iter, len(ParameterGrid(param_grid)))
     clf = RandomizedSearchCV(estimator=estimator,
-                             param_distributions=get_param_grid(),
+                             param_distributions=param_grid,
                              n_iter=n_iter,
                              scoring='f1',
                              n_jobs=n_jobs,
@@ -117,9 +124,9 @@ def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
 
 def get_param_grid():
     return {
-        'estimator__C': [0.01, 0.1, 1, 10, 100],
-        'lambda_': np.linspace(0.1, 1, 10),
-        'mu': np.linspace(0.1, 1, 10)
+        'estimator__C': [1, 10, 100],
+        'lambda_': np.linspace(0.8, 1, 3),
+        'mu': np.linspace(0.1, 0.5, 5)
     }
 
 def predict(clf, X_test, **kwargs):
