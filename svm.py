@@ -46,7 +46,7 @@ class TreeSVC(BaseEstimator):
                 warnings.simplefilter('ignore', category=category)
             self._ignored_warnings = True
 
-    def fit(self, X, y, n_jobs=-1, savepath=None):
+    def fit(self, X, y, n_jobs=1, savepath=None):
         self._ignore_warnings()
 
         self._X = X
@@ -56,7 +56,7 @@ class TreeSVC(BaseEstimator):
         self.estimator.fit(self.kernel_matrix_, y)
         return self
 
-    def predict(self, X, n_jobs=-1, savepath=None):
+    def predict(self, X, n_jobs=1, savepath=None):
         kernel_matrix = pairwise_kernels(X, self._X, metric=self._kernel_function, n_jobs=n_jobs)
         if savepath is not None:
             np.savetxt(savepath, kernel_matrix, fmt='%g', delimiter=',')
