@@ -1,4 +1,5 @@
 import logging as log
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -7,6 +8,7 @@ import warnings
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
+from sklearn.decomposition import KernelPCA
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import ParameterGrid, RandomizedSearchCV, train_test_split
@@ -79,6 +81,12 @@ def parse_args():
         action='store_true',
         dest='refresh_predictions'
     )
+    parser.add_argument(
+        '-v', '--visualize',
+        help="display visualization of fit() kernel matrix",
+        action='store_true',
+        dest='visualize'
+    )
     return parser.parse_args()
 
 def fit(clf, X_train, y_train, args):
@@ -106,7 +114,6 @@ def fit(clf, X_train, y_train, args):
             y=y_train,
             n_jobs=args.n_jobs,
             savepath=FIT_SAVEPATH)
-    return clf
 
 def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
     log_call()
@@ -128,6 +135,18 @@ def get_param_grid():
         'lambda_': np.linspace(0.5, 1, 6),
         'mu': np.linspace(0.1, 0.5, 5)
     }
+
+def visualize(kmat, labels):
+    log_call()
+    m = labels.shape[0]
+    assert kmat.shape == (m, m)
+
+    kpca = KernelPCA(n_components=2, kernel='precomputed')
+    kmat_reduced = kpca.fit_transform(kmat)
+
+    x, y = kmat_reduced[:, 0], kmat_reduced[:, 1]
+    plt.scatter(x, y, c=labels, cmap='cool')
+    plt.show()
 
 def predict(clf, X_test, **kwargs):
     log_call()
@@ -181,6 +200,8 @@ def task_a(X, Y, tweets, trees, args):
                       kernel=kernel,
                       trees=trees)
         fit(clf, X_train, y_train, args)
+        if args.visualize:
+            visualize(kmat=clf.kernel_matrix_, labels=y_train)
 
         y_predict = predict(clf, X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
         print_scores(y_test=y_test, y_predict=y_predict)

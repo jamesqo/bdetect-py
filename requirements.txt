@@ -1,4 +1,5 @@
 conllu>=0.8
+matplotlib
 nltk
 numpy
 pandas>=0.22
