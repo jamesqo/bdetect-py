@@ -169,7 +169,7 @@ def task_a(X, Y, tweets, trees, args):
     for kernel in ['ptk']: # 'sptk', 'csptk'
         print_header(task='a', model='svm+{}'.format(kernel))
 
-        base_clf = SVC()
+        base_clf = SVC(class_weight='balanced')
         clf = TreeSVC(estimator=base_clf,
                       kernel=kernel,
                       trees=trees)
