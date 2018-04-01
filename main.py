@@ -1,4 +1,5 @@
 import logging as log
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -7,6 +8,8 @@ import warnings
 from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.decomposition import KernelPCA
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import ParameterGrid, RandomizedSearchCV, train_test_split
@@ -24,6 +27,9 @@ LABELS_FNAME = os.path.join(TWEETS_ROOT, 'data.csv')
 TBPARSER_ROOT = os.path.join('deps', 'TweeboParser')
 TBPARSER_INPUT_FNAME = 'tweets.txt'
 
+DEFAULT_LAMBDA = 0.5
+DEFAULT_MU = 0.1
+DEFAULT_C = 100.0
 DEFAULT_ITERATIONS = 100
 
 FIT_SAVEPATH = 'kernels.fit.csv'
@@ -79,6 +85,12 @@ def parse_args():
         action='store_true',
         dest='refresh_predictions'
     )
+    parser.add_argument(
+        '-v', '--visualize',
+        help="display visualization of fit() kernel matrix",
+        action='store_true',
+        dest='visualize'
+    )
     return parser.parse_args()
 
 def fit(clf, X_train, y_train, args):
@@ -106,7 +118,6 @@ def fit(clf, X_train, y_train, args):
             y=y_train,
             n_jobs=args.n_jobs,
             savepath=FIT_SAVEPATH)
-    return clf
 
 def optimize_params(estimator, X_train, y_train, n_iter, n_jobs):
     log_call()
@@ -128,6 +139,20 @@ def get_param_grid():
         'lambda_': np.linspace(0.5, 1, 6),
         'mu': np.linspace(0.1, 0.5, 5)
     }
+
+def visualize(kmat, labels):
+    log_call()
+    m = labels.shape[0]
+    assert kmat.shape == (m, m)
+
+    kpca = KernelPCA(n_components=3, kernel='precomputed')
+    kmat_reduced = kpca.fit_transform(kmat)
+
+    x, y, z = kmat_reduced[:, 0], kmat_reduced[:, 1], kmat_reduced[:, 2]
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x, y, z, c=labels, cmap='cool')
+    plt.show()
 
 def predict(clf, X_test, **kwargs):
     log_call()
@@ -176,11 +201,16 @@ def task_a(X, Y, tweets, trees, args):
     for kernel in ['ptk']: # 'sptk', 'csptk'
         print_header(task='a', model='svm+{}'.format(kernel))
 
-        base_clf = SVC(class_weight='balanced')
+        base_clf = SVC(C=DEFAULT_C,
+                       class_weight='balanced')
         clf = TreeSVC(estimator=base_clf,
                       kernel=kernel,
-                      trees=trees)
+                      trees=trees,
+                      lambda_=DEFAULT_LAMBDA,
+                      mu=DEFAULT_MU)
         fit(clf, X_train, y_train, args)
+        if args.visualize:
+            visualize(kmat=clf.kernel_matrix_, labels=y_train)
 
         y_predict = predict(clf, X_test, n_jobs=args.n_jobs, savepath=PREDICT_SAVEPATH)
         print_scores(y_test=y_test, y_predict=y_predict)

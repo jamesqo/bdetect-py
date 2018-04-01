@@ -9,7 +9,7 @@ from kernels import TreeKernel
 from util import log_call
 
 class TreeSVC(BaseEstimator):
-    def __init__(self, estimator, kernel, trees, lambda_=0.4, mu=0.4, normalize=True, ignore_warnings=[]):
+    def __init__(self, estimator, kernel, trees, lambda_, mu, normalize=True, ignore_warnings=[]):
         if not isinstance(estimator, SVC):
             raise TypeError(
                 "'estimator' should be SVC but instead was {}".format(
