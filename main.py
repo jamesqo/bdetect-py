@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from datetime import datetime
 from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from sklearn.svm import SVC
 
@@ -136,6 +136,10 @@ def print_scores(y_test, y_predict):
 
     for name, score in scores.items():
         print("{}: {}".format(name, score))
+
+    print("confusion matrix:")
+    print(confusion_matrix(y_true=y_test, y_pred=y_predict))
+
     print()
 
 def save_test_session(tweets_test, y_test, y_predict):
