@@ -4,8 +4,7 @@ import os
 
 from collections import namedtuple, OrderedDict
 from itertools import islice
-from nltk.corpus import wordnet
-from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 
 from util import exec_and_check, log_call
 
@@ -32,24 +31,11 @@ def _scrub_trivia(trees):
 def _stem(trees):
     log_call()
 
-    def _wordnet_pos(pos):
-        if pos == 'A':
-            return wordnet.ADJ
-        elif pos == 'V':
-            return wordnet.VERB
-        elif pos == 'N':
-            return wordnet.NOUN
-        elif pos == 'R':
-            return wordnet.ADV
-
-        return wordnet.NOUN
-
     def do_stem(node):
         assert node.data['lemma'] == '_'
 
-        form, pos = node.data['form'], node.data['upostag']
-        lemma = lem.lemmatize(form, pos=_wordnet_pos(pos))
-        lemma = lemma.lower()
+        form = node.data['form']
+        lemma = stem.stem(form)
         node.data['lemma'] = lemma
 
         for child in node.children:
@@ -58,7 +44,7 @@ def _stem(trees):
     if not nltk.download('wordnet', quiet=True):
         raise RuntimeError("Failed to download WordNet corpus")
 
-    lem = WordNetLemmatizer()
+    stem = PorterStemmer()
     for tree in trees:
         for child in tree.children:
             do_stem(child)
