@@ -170,8 +170,8 @@ def print_best_params(best_params):
 
 def print_scores(y_test, y_predict):
     values = OrderedDict([
-        ('true instances', sum(y_test)),
-        ('false instances', sum(~y_test)),
+        ('true instances', "actual {}, predicted {}".format(sum(y_test), sum(y_predict))),
+        ('false instances', "actual {}, predicted {}".format(sum(~y_test), sum(~y_predict))),
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
         ('precision', precision_score(y_true=y_test, y_pred=y_predict)),
         ('recall', recall_score(y_true=y_test, y_pred=y_predict)),
