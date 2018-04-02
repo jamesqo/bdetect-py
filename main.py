@@ -145,7 +145,9 @@ def visualize(kmat, labels):
     m = labels.shape[0]
     assert kmat.shape == (m, m)
 
-    kpca = KernelPCA(n_components=3, kernel='precomputed')
+    kpca = KernelPCA(n_components=3,
+                     kernel='precomputed',
+                     random_state=42)
     kmat_reduced = kpca.fit_transform(kmat)
 
     x, y, z = kmat_reduced[:, 0], kmat_reduced[:, 1], kmat_reduced[:, 2]
