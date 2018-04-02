@@ -169,15 +169,17 @@ def print_best_params(best_params):
     print()
 
 def print_scores(y_test, y_predict):
-    scores = OrderedDict([
+    values = OrderedDict([
+        ('true instances', sum(y_test)),
+        ('false instances', sum(~y_test)),
         ('accuracy', accuracy_score(y_true=y_test, y_pred=y_predict)),
         ('precision', precision_score(y_true=y_test, y_pred=y_predict)),
         ('recall', recall_score(y_true=y_test, y_pred=y_predict)),
         ('f1', f1_score(y_true=y_test, y_pred=y_predict))
     ])
 
-    for name, score in scores.items():
-        print("{}: {}".format(name, score))
+    for name, value in values.items():
+        print("{}: {}".format(name, value))
 
     print("confusion matrix:")
     print(confusion_matrix(y_true=y_test, y_pred=y_predict))
