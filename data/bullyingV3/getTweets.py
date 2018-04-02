@@ -55,15 +55,16 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_key, access_secret)
 api = tweepy.API(auth_handler=auth, parser=JSONParser())
 
-indf = pd.read_csv('data.csv', names=['tweetid', 'userid', 'class', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+indf = pd.read_csv('data.csv', encoding='utf-8', names=['tweetid', 'userid', 'class', 'type', 'form', 'teasing', 'author_role', 'emotion'])
+indf.set_index('tweetid', inplace=True)
+
 with codecs.open(outputFile, 'w', encoding='utf8') as outFile:
 	outFile.write('[')
-	l = list(indf['tweetid'])
+	l = list(indf.index)
 	for ln in chunkIt(l, 75):
-		rst = api.statuses_lookup(id_=ln);
-		for tweet in rst:
-			outFile.write(json.dumps(tweet))
-			outFile.write(",\n")
-	outFile.seek(-2, os.SEEK_CUR)
-	outFile.truncate()
-	outFile.write(']')
+		rst = api.statuses_lookup(id_=ln)
+		for i, tweet in zip(ln, rst):
+			txt = tweet['text']
+			indf.loc[i, 'tweettext'] = txt
+
+indf.to_csv('data_withtext.csv', encoding='utf-8')
