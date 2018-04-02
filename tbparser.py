@@ -41,9 +41,6 @@ def _stem(trees):
         for child in node.children:
             do_stem(child)
 
-    if not nltk.download('wordnet', quiet=True):
-        raise RuntimeError("Failed to download WordNet corpus")
-
     stem = PorterStemmer()
     for tree in trees:
         for child in tree.children:
