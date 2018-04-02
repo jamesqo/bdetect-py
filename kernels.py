@@ -36,8 +36,22 @@ class PTKernel(object):
         self.trees = trees
         self.normalize = normalize
         self._delta_cache = {}
+        self._idfs = self._compute_idfs(trees)
         if normalize:
             self._sqrt_k_cache = self._compute_sqrt_ks(trees)
+
+    def _compute_idfs(self, trees):
+        dfs = {}
+        for tree in trees:
+            seen = {}
+            for node in tn.get_descendants(tree):
+                lemma = node.data['lemma']
+                if not seen.get(lemma, False):
+                    dfs[lemma] = dfs.get(lemma, 0) + 1
+                    seen[lemma] = True
+        N = len(trees)
+        log10_N = np.log10(N)
+        return {lemma: log10_N - np.log10(df) for lemma, df in dfs.items()}
 
     def _compute_sqrt_ks(self, trees):
         k = self._kernel_no_normalize
@@ -69,10 +83,14 @@ class PTKernel(object):
         if result is not None:
             return result
 
+        lemma = a.data['lemma']
+        assert lemma == b.data['lemma']
+        idf = self._idfs[lemma]
+        result = self._mu_lambda2 * idf
+
         nca, ncb = len(a.children), len(b.children)
-        result = self._mu_lambda2
         if nca != 0 and ncb != 0:
-            result += (self.mu * self._sigma_delta_p(a, b, nca, ncb))
+            result += (self.mu * idf * self._sigma_delta_p(a, b, nca, ncb))
 
         self._delta_cache[key] = result
         return result
